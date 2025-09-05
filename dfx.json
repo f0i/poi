@@ -1,0 +1,26 @@
+{
+  "canisters": {
+    "poi_backend": {
+      "main": "src/poi_backend/main.mo",
+      "type": "motoko"
+    },
+    "poi_frontend": {
+      "dependencies": [
+        "poi_backend"
+      ],
+      "source": [
+        "src/poi_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "poi_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
