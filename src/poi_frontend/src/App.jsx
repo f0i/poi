@@ -2,6 +2,7 @@ import { useState } from "react";
 import { poi_backend } from "declarations/poi_backend";
 import { AuthProvider, useAuth } from "./AuthContext";
 import ChallengeList from "./components/ChallengeList";
+import Settings from "./components/Settings";
 
 function AuthApp() {
   const {
@@ -14,9 +15,6 @@ function AuthApp() {
     loading,
   } = useAuth();
   const [greeting, setGreeting] = useState("");
-  const [bearerToken, setBearerToken] = useState("");
-  const [showSettings, setShowSettings] = useState(false);
-  const [tokenStatus, setTokenStatus] = useState(""); // "saving", "saved", "error"
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -27,22 +25,7 @@ function AuthApp() {
     return false;
   }
 
-  async function handleSetBearerToken(event) {
-    event.preventDefault();
-    if (!bearerToken.trim()) return;
 
-    setTokenStatus("saving");
-    try {
-      await poi_backend.setTwitterBearerToken(bearerToken);
-      setTokenStatus("saved");
-      setBearerToken("");
-      setTimeout(() => setTokenStatus(""), 3000);
-    } catch (error) {
-      console.error("Failed to set Bearer token:", error);
-      setTokenStatus("error");
-      setTimeout(() => setTokenStatus(""), 3000);
-    }
-  }
 
   if (loading) {
     return (
@@ -229,88 +212,7 @@ function AuthApp() {
             )}
 
             {/* Settings Section */}
-            <div className="card">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white flex items-center">
-                  <svg className="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Settings
-                </h3>
-                <button
-                  onClick={() => setShowSettings(!showSettings)}
-                  className="btn-secondary"
-                >
-                  {showSettings ? "Hide Settings" : "Show Settings"}
-                </button>
-              </div>
-
-              {showSettings && (
-                <div className="space-y-6">
-                  <div className="bg-slate-700 rounded-lg p-4 border border-slate-600">
-                    <h4 className="text-lg font-semibold text-white mb-3">Twitter API Configuration</h4>
-                    <p className="text-slate-400 text-sm mb-4">
-                      Set your Twitter Bearer Token for challenge verification. This token is stored securely in the backend and cannot be retrieved.
-                    </p>
-
-                    <form onSubmit={handleSetBearerToken} className="space-y-4">
-                      <div>
-                        <label className="label">
-                          Twitter Bearer Token
-                        </label>
-                        <input
-                          type="password"
-                          value={bearerToken}
-                          onChange={(e) => setBearerToken(e.target.value)}
-                          className="input-field w-full"
-                          placeholder="Enter your Twitter Bearer Token"
-                          required
-                        />
-                        <p className="text-slate-400 text-sm mt-1">
-                          Get your token from <a href="https://developer.twitter.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">Twitter Developer Portal</a>
-                        </p>
-                      </div>
-
-                      <div className="flex items-center space-x-3">
-                        <button
-                          type="submit"
-                          className="btn-primary"
-                          disabled={tokenStatus === "saving"}
-                        >
-                          {tokenStatus === "saving" ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                              Saving...
-                            </>
-                          ) : (
-                            "Save Token"
-                          )}
-                        </button>
-
-                        {tokenStatus === "saved" && (
-                          <div className="flex items-center text-green-400">
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            Token saved successfully!
-                          </div>
-                        )}
-
-                        {tokenStatus === "error" && (
-                          <div className="flex items-center text-red-400">
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                            Failed to save token
-                          </div>
-                        )}
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              )}
-            </div>
+            <Settings />
 
             {/* Greeting Test Section */}
             <div className="card">

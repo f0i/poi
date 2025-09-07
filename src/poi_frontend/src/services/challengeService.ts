@@ -117,5 +117,37 @@ export class ChallengeService {
       return null;
     }
   }
+
+  async isTwitterBearerTokenSet(): Promise<boolean> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.isTwitterBearerTokenSet();
+      return result;
+    } catch (error) {
+      console.error("Failed to check Twitter Bearer Token status:", error);
+      return false;
+    }
+  }
+
+  async getTwitterBearerTokenMasked(): Promise<string | null> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.getTwitterBearerTokenMasked();
+      return result.length > 0 ? result[0] : null;
+    } catch (error) {
+      console.error("Failed to get masked Twitter Bearer Token:", error);
+      return null;
+    }
+  }
+
+  async setTwitterBearerToken(token: string): Promise<void> {
+    try {
+      const actor = this.getActor();
+      await actor.setTwitterBearerToken(token);
+    } catch (error) {
+      console.error("Failed to set Twitter Bearer Token:", error);
+      throw error;
+    }
+  }
 }
 
