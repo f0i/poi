@@ -1,11 +1,8 @@
 # Agent Guidelines for POI Project
 
 ## Build/Test Commands
-- **Full build**: `npm run build` (builds all workspaces)
-- **Frontend build**: `cd src/poi_frontend && npm run build` (TypeScript + Vite)
-- **Backend deploy**: `dfx deploy` (deploys Motoko canister)
-- **Development server**: `npm start` (starts Vite dev server on port 3000)
-- **Format code**: `cd src/poi_frontend && npm run format` (Prettier)
+- **Full build**: `dfx build --network ic --verbose` (builds all canisters for mainnet with verbose output)
+- **Backend deploy**: Ask the user to run `dfx deploy --ic` (deploys Motoko and frontend canister to mainnet, requires user input for password)
 - **Generate types**: `dfx generate` (updates Candid interface)
 
 ## Code Style Guidelines

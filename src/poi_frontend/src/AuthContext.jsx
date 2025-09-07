@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { AuthClient } from "@dfinity/auth-client";
-import { HttpAgent } from "@dfinity/agent";
 import { UserDataService } from "./services/userDataService";
 
 const AuthContext = createContext();
@@ -26,16 +25,8 @@ export const AuthProvider = ({ children }) => {
 
     setUserDataLoading(true);
     try {
-      const agent = new HttpAgent({ identity: userIdentity });
-      if (process.env.DFX_NETWORK !== "ic") {
-        await agent.fetchRootKey();
-      }
-
-      const userDataService = new UserDataService(agent);
-      const user = await userDataService.getUser(
-        userIdentity.getPrincipal(),
-        window.location.origin,
-      );
+      const userDataService = new UserDataService(userIdentity);
+      const user = await userDataService.getUser(window.location.origin);
       setUserData(user);
     } catch (error) {
       console.error("Failed to fetch user data:", error);
