@@ -1,5 +1,4 @@
 import Principal "mo:base/Principal";
-import Text "mo:base/Text";
 import Time "mo:base/Time";
 import Trie "mo:base/Trie";
 import Nat "mo:base/Nat";
@@ -7,78 +6,75 @@ import Array "mo:base/Array";
 import Debug "mo:base/Debug";
 import Hash "mo:base/Hash";
 import Blob "mo:base/Blob";
+import Text "mo:core/Text";
 import IC "ic:aaaaa-aa";
 
 persistent actor {
   // External canister types
   type Provider = { #github; #twitter; #discord; #google; #auth0; #zitadel; #x };
   type User = {
-    id: Text;
-    bio: ?Text;
-    verified: ?Bool;
-    username: ?Text;
-    provider: Provider;
-    provider_created_at: ?Text;
-    avatar_url: ?Text;
-    name: ?Text;
-    createdAt: Time.Time;
-    origin: Text;
-    following_count: ?Nat;
-    public_gists: ?Nat;
-    email: ?Text;
-    website: ?Text;
-    tweet_count: ?Nat;
-    public_repos: ?Nat;
-    email_verified: ?Bool;
-    followers_count: ?Nat;
-    location: ?Text;
+    id : Text;
+    bio : ?Text;
+    verified : ?Bool;
+    username : ?Text;
+    provider : Provider;
+    provider_created_at : ?Text;
+    avatar_url : ?Text;
+    name : ?Text;
+    createdAt : Time.Time;
+    origin : Text;
+    following_count : ?Nat;
+    public_gists : ?Nat;
+    email : ?Text;
+    website : ?Text;
+    tweet_count : ?Nat;
+    public_repos : ?Nat;
+    email_verified : ?Bool;
+    followers_count : ?Nat;
+    location : ?Text;
   };
 
   // Cached user data with timestamp
   type CachedUser = {
-    user: User;
-    timestamp: Time.Time;
-    ttl: Nat; // Time to live in seconds (24 hours = 86400)
+    user : User;
+    timestamp : Time.Time;
+    ttl : Nat; // Time to live in seconds (24 hours = 86400)
   };
 
   // Challenge types
   type ChallengeType = {
-    #follows: { user: Text };
+    #follows : { user : Text };
   };
 
   type Challenge = {
-    id: Nat;
-    description: Text;
-    challengeType: ChallengeType;
+    id : Nat;
+    description : Text;
+    challengeType : ChallengeType;
   };
 
   // Storage for cached user data
-  private stable var userDataStore: Trie.Trie<Principal, CachedUser> = Trie.empty();
+  private stable var userDataStore : Trie.Trie<Principal, CachedUser> = Trie.empty();
 
   // Storage for challenges
-  private stable var challenges: [Challenge] = [];
+  private stable var challenges : [Challenge] = [];
 
   // Challenge ID counter
-  private var nextChallengeId: Nat = 0;
+  private var nextChallengeId : Nat = 0;
 
   // External canister ID
   private let USER_DATA_CANISTER_ID = "fhzgg-waaaa-aaaah-aqzvq-cai";
 
   // Twitter API Bearer Token (write-only, no getter)
-  private stable var twitterBearerToken: Text = "";
+  private stable var twitterBearerToken : Text = "";
 
   // Challenge status storage: Principal -> ChallengeId -> Status
-  private stable var challengeStatuses: Trie.Trie<Principal, Trie.Trie<Nat, {
-    #pending;
-    #verified;
-    #failed: Text;
-  }>> = Trie.empty();
+  private stable var challengeStatuses : Trie.Trie<Principal, Trie.Trie<Nat, { #pending; #verified; #failed : Text }>> = Trie.empty();
 
   // Challenge status type for external use
   public type ChallengeStatus = {
     #pending;
     #verified;
-    #failed: Text;
+    #failed : Text;
   };
 
   // Transform function for HTTP requests
@@ -92,24 +88,24 @@ persistent actor {
   };
 
   // Cache TTL (24 hours in nanoseconds)
-  private let CACHE_TTL: Nat = 86400 * 1_000_000_000;
+  private let CACHE_TTL : Nat = 86400 * 1_000_000_000;
 
   // External canister actor reference
   private func getUserDataActor() : async actor {
-    getUser: (Principal, Text) -> async ?User;
+    getUser : (Principal, Text) -> async ?User;
   } {
-    actor(USER_DATA_CANISTER_ID)
+    actor (USER_DATA_CANISTER_ID);
   };
 
   // Check if cached data is still valid
-  private func isCacheValid(cached: CachedUser) : Bool {
+  private func isCacheValid(cached : CachedUser) : Bool {
     let now = Time.now();
     let age = now - cached.timestamp;
-    age < cached.ttl
+    age < cached.ttl;
   };
 
   // Fetch user data from external canister
-  private func fetchUserData(principal: Principal, origin: Text) : async ?User {
+  private func fetchUserData(principal : Principal, origin : Text) : async ?User {
     Debug.print("Fetching user data from external canister for principal: " # Principal.toText(principal));
     try {
       let userDataActor = await getUserDataActor();
@@ -117,7 +113,7 @@ persistent actor {
       switch (result) {
         case (?user) {
           // Store in cache
-          let cachedUser: CachedUser = {
+          let cachedUser : CachedUser = {
             user = user;
             timestamp = Time.now();
             ttl = CACHE_TTL;
@@ -126,25 +122,25 @@ persistent actor {
             userDataStore,
             { key = principal; hash = Principal.hash(principal) },
             Principal.equal,
-            ?cachedUser
+            ?cachedUser,
           ).0;
           Debug.print("Stored user data in cache for principal: " # Principal.toText(principal));
-          ?user
+          ?user;
         };
         case (null) {
           Debug.print("No user data found for principal: " # Principal.toText(principal));
-          null
+          null;
         };
-      }
+      };
     } catch (_error) {
       // Log error and return null
       Debug.print("Error fetching user data for principal: " # Principal.toText(principal));
-      null
+      null;
     };
   };
 
   // Get user data (from cache or fetch from external canister)
-  public shared(msg) func getUserData(origin: Text) : async ?User {
+  public shared (msg) func getUserData(origin : Text) : async ?User {
     let principal = msg.caller;
 
     Debug.print("Getting user data for principal: " # Principal.toText(principal));
@@ -154,60 +150,60 @@ persistent actor {
       case (?cached) {
         if (isCacheValid(cached)) {
           Debug.print("Returning cached user data for principal: " # Principal.toText(principal));
-          ?cached.user
+          ?cached.user;
         } else {
           // Cache expired, fetch fresh data
           Debug.print("Cache expired, fetching fresh data for principal: " # Principal.toText(principal));
-          await fetchUserData(principal, origin)
-        }
+          await fetchUserData(principal, origin);
+        };
       };
       case (null) {
         // No cached data, fetch from external canister
         Debug.print("No cached data, fetching from external canister for principal: " # Principal.toText(principal));
-        await fetchUserData(principal, origin)
+        await fetchUserData(principal, origin);
       };
-    }
+    };
   };
 
   // Refresh user data (force fetch from external canister)
-  public shared(msg) func refreshUserData(origin: Text) : async ?User {
+  public shared (msg) func refreshUserData(origin : Text) : async ?User {
     let principal = msg.caller;
     Debug.print("Refreshing user data for principal: " # Principal.toText(principal));
-    await fetchUserData(principal, origin)
+    await fetchUserData(principal, origin);
   };
 
   // Get cached user data without fetching (query call)
-  public query(msg) func getCachedUserData() : async ?User {
+  public query (msg) func getCachedUserData() : async ?User {
     let principal = msg.caller;
     switch (Trie.find(userDataStore, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
       case (?cached) {
         if (isCacheValid(cached)) {
-          ?cached.user
+          ?cached.user;
         } else {
-          null
-        }
+          null;
+        };
       };
       case (null) { null };
-    }
+    };
   };
 
   // Challenge CRUD operations
 
   // Create a new challenge
-  public shared(msg) func createChallenge(description: Text, challengeType: ChallengeType) : async Nat {
+  public shared (msg) func createChallenge(description : Text, challengeType : ChallengeType) : async Nat {
     let caller = msg.caller;
     // TODO: Add authorization check if needed
 
     let challengeId = nextChallengeId;
     nextChallengeId += 1;
 
-    let challenge: Challenge = {
+    let challenge : Challenge = {
       id = challengeId;
       description = description;
       challengeType = challengeType;
     };
 
-    let newChallenge: Challenge = {
+    let newChallenge : Challenge = {
       id = challengeId;
       description = description;
       challengeType = challengeType;
@@ -216,79 +212,85 @@ persistent actor {
 
     Debug.print("Created challenge: " # Nat.toText(challengeId) # " - " # description);
 
-    challengeId
+    challengeId;
   };
 
   // Get all challenges
   public query func getChallenges() : async [Challenge] {
-    challenges
+    challenges;
   };
 
   // Get a specific challenge by ID
-  public query func getChallenge(id: Nat) : async ?Challenge {
-    Array.find<Challenge>(challenges, func (c) = c.id == id)
+  public query func getChallenge(id : Nat) : async ?Challenge {
+    Array.find<Challenge>(challenges, func(c) = c.id == id);
   };
 
   // Update a challenge
-  public shared(msg) func updateChallenge(id: Nat, description: Text, challengeType: ChallengeType) : async Bool {
+  public shared (msg) func updateChallenge(id : Nat, description : Text, challengeType : ChallengeType) : async Bool {
     let caller = msg.caller;
     // TODO: Add authorization check if needed
 
-    let challengeIndex = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }) }, challenges, func (a, b) = a.id == b.id);
+    let challengeIndex = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id);
     switch (challengeIndex) {
       case (?index) {
-        let updatedChallenge: Challenge = {
+        let updatedChallenge : Challenge = {
           id = id;
           description = description;
           challengeType = challengeType;
         };
-        challenges := Array.tabulate<Challenge>(challenges.size(), func (i) {
-          if (i == index) { updatedChallenge } else { challenges[i] }
-        });
+        challenges := Array.tabulate<Challenge>(
+          challenges.size(),
+          func(i) {
+            if (i == index) { updatedChallenge } else { challenges[i] };
+          },
+        );
         Debug.print("Updated challenge: " # Nat.toText(id));
-        true
+        true;
       };
       case (null) {
         Debug.print("Challenge not found for update: " # Nat.toText(id));
-        false
+        false;
       };
-    }
+    };
   };
 
   // Delete a challenge
-  public shared(msg) func deleteChallenge(id: Nat) : async Bool {
+  public shared (msg) func deleteChallenge(id : Nat) : async Bool {
     let caller = msg.caller;
     // TODO: Add authorization check if needed
 
-    let challengeIndex = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }) }, challenges, func (a, b) = a.id == b.id);
+    let challengeIndex = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id);
     switch (challengeIndex) {
       case (?index) {
-        challenges := Array.tabulate<Challenge>(challenges.size() - 1, func (i) {
-          challenges[if (i < index) { i } else { i + 1 }]
-        });
+        challenges := Array.tabulate<Challenge>(
+          challenges.size() - 1,
+          func(i) {
+            challenges[if (i < index) { i } else { i + 1 }];
+          },
+        );
         Debug.print("Deleted challenge: " # Nat.toText(id));
-        true
+        true;
       };
       case (null) {
         Debug.print("Challenge not found for deletion: " # Nat.toText(id));
-        false
+        false;
       };
-    }
+    };
   };
 
   // Get challenge status for current user
-  public query(msg) func getChallengeStatus(challengeId: Nat) : async ?ChallengeStatus {
+  public query (msg) func getChallengeStatus(challengeId : Nat) : async ?ChallengeStatus {
     let caller = msg.caller;
     switch (Trie.find(challengeStatuses, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
       case (?userStatuses) {
-        Trie.find(userStatuses, { key = challengeId; hash = Hash.hash(challengeId) }, Nat.equal)
+        Trie.find(userStatuses, { key = challengeId; hash = Hash.hash(challengeId) }, Nat.equal);
       };
       case (null) { null };
-    }
+    };
   };
 
   // Set challenge status for current user (internal use)
-  private func setChallengeStatus(caller: Principal, challengeId: Nat, status: ChallengeStatus) : () {
+  private func setChallengeStatus(caller : Principal, challengeId : Nat, status : ChallengeStatus) : () {
     let userStatuses = switch (Trie.find(challengeStatuses, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
       case (?statuses) { statuses };
       case (null) { Trie.empty() };
@@ -298,19 +300,19 @@ persistent actor {
       userStatuses,
       { key = challengeId; hash = Hash.hash(challengeId) },
       Nat.equal,
-      ?status
+      ?status,
     ).0;
 
     challengeStatuses := Trie.replace(
       challengeStatuses,
       { key = caller; hash = Principal.hash(caller) },
       Principal.equal,
-      ?updatedUserStatuses
+      ?updatedUserStatuses,
     ).0;
   };
 
   // Set Twitter Bearer Token (write-only, no getter for security)
-  public shared(msg) func setTwitterBearerToken(token: Text) : async () {
+  public shared (msg) func setTwitterBearerToken(token : Text) : async () {
     let caller = msg.caller;
     // TODO: Add authorization check - only allow admin/owner to set this
 
@@ -320,23 +322,31 @@ persistent actor {
 
   // Check if Twitter Bearer Token is set
   public query func isTwitterBearerTokenSet() : async Bool {
-    Text.size(twitterBearerToken) > 0
+    Text.size(twitterBearerToken) > 0;
   };
 
   // Get masked Twitter Bearer Token (last 5 characters)
   public query func getTwitterBearerTokenMasked() : async ?Text {
     let tokenLength = Text.size(twitterBearerToken);
-    if (tokenLength == 0) {
-      null
+    if (tokenLength < 20) {
+      null;
     } else {
-      ?("*****...") // Simple masked representation
-    }
+      let text = Text.reverse(twitterBearerToken);
+      let tokens = text.chars();
+      let ?a = tokens.next() else return null;
+      let ?b = tokens.next() else return null;
+      let ?c = tokens.next() else return null;
+      let ?d = tokens.next() else return null;
+      let ?e = tokens.next() else return null;
+      let hidden = "..." # Text.fromArray([e, d, c, b, a]);
+      ?(hidden) // Simple masked representation
+    };
   };
 
   // Verify challenge by checking Twitter following relationship
-  public shared(msg) func verifyChallenge(challengeId: Nat) : async {
-    #success: Bool;
-    #error: Text;
+  public shared (msg) func verifyChallenge(challengeId : Nat) : async {
+    #success : Bool;
+    #error : Text;
   } {
     let caller = msg.caller;
 
@@ -349,7 +359,7 @@ persistent actor {
     };
 
     // Find the challenge
-    let challengeIndex = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }) }, challenges, func (a, b) = a.id == b.id);
+    let challengeIndex = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id);
     switch (challengeIndex) {
       case (?index) {
         let challenge = challenges[index];
@@ -373,50 +383,50 @@ persistent actor {
                         case (#success(isFollowing)) {
                           if (isFollowing) {
                             setChallengeStatus(caller, challengeId, #verified);
-                            #success(true)
+                            #success(true);
                           } else {
                             setChallengeStatus(caller, challengeId, #failed("Not following the required user"));
-                            #success(false)
-                          }
+                            #success(false);
+                          };
                         };
                         case (#error(err)) {
                           setChallengeStatus(caller, challengeId, #failed(err));
-                          #error(err)
+                          #error(err);
                         };
-                      }
+                      };
                     };
                     case (_) {
                       setChallengeStatus(caller, challengeId, #failed("User does not have a Twitter/X account linked"));
-                      #error("User does not have a Twitter/X account linked")
+                      #error("User does not have a Twitter/X account linked");
                     };
-                  }
+                  };
                 } else {
                   setChallengeStatus(caller, challengeId, #failed("User data is stale, please refresh your profile"));
-                  #error("User data is stale, please refresh your profile")
-                }
+                  #error("User data is stale, please refresh your profile");
+                };
               };
               case (null) {
                 setChallengeStatus(caller, challengeId, #failed("No user data found, please sign in with Twitter/X"));
-                #error("No user data found, please sign in with Twitter/X")
+                #error("No user data found, please sign in with Twitter/X");
               };
-            }
+            };
           };
           case (_) {
             setChallengeStatus(caller, challengeId, #failed("Unsupported challenge type"));
-            #error("Unsupported challenge type")
+            #error("Unsupported challenge type");
           };
-        }
+        };
       };
       case (null) {
-        #error("Challenge not found")
+        #error("Challenge not found");
       };
-    }
+    };
   };
 
   // Helper function to verify Twitter following relationship
-  private func verifyTwitterFollowing(caller: Principal, sourceUserId: Text, targetUsername: Text) : async {
-    #success: Bool;
-    #error: Text;
+  private func verifyTwitterFollowing(caller : Principal, sourceUserId : Text, targetUsername : Text) : async {
+    #success : Bool;
+    #error : Text;
   } {
     // Check if Bearer token is set
     if (Text.size(twitterBearerToken) == 0) {
@@ -426,12 +436,12 @@ persistent actor {
     Debug.print("Verifying Twitter following: " # sourceUserId # " -> " # targetUsername);
 
     // 1. SETUP ARGUMENTS FOR HTTP GET request to Twitter API v2
-    let host : Text = "api.twitter.com";
+    let host : Text = "api.x.com";
     let url = "https://" # host # "/2/users/" # sourceUserId # "/following?user.fields=id,username&max_results=1000";
 
     // 1.1 Prepare headers for the Twitter API request
     let request_headers = [
-      { name = "Authorization"; value = "Bearer " # twitterBearerToken; },
+      { name = "Authorization"; value = "Bearer " # twitterBearerToken },
       { name = "User-Agent"; value = "poi-verification/1.0" },
     ];
 
@@ -456,7 +466,7 @@ persistent actor {
 
     // 4. PROCESS THE RESPONSE
     let decoded_text : Text = switch (Text.decodeUtf8(http_response.body)) {
-      case (null) { return #error("Failed to decode response body"); };
+      case (null) { return #error("Failed to decode response body") };
       case (?y) { y };
     };
 
@@ -466,11 +476,15 @@ persistent actor {
     // 5. CHECK HTTP STATUS CODE
     if (http_response.status != 200) {
       switch (http_response.status) {
-        case (401) { return #error("Twitter API authentication failed - check bearer token"); };
-        case (403) { return #error("Twitter API access forbidden"); };
-        case (404) { return #error("Twitter user not found"); };
-        case (429) { return #error("Twitter API rate limit exceeded"); };
-        case (_) { return #error("Twitter API error: HTTP " # Nat.toText(http_response.status)); };
+        case (401) {
+          return #error("Twitter API authentication failed - check bearer token");
+        };
+        case (403) { return #error("Twitter API access forbidden") };
+        case (404) { return #error("Twitter user not found") };
+        case (429) { return #error("Twitter API rate limit exceeded") };
+        case (_) {
+          return #error("Twitter API error: HTTP " # Nat.toText(http_response.status));
+        };
       };
     };
 
@@ -481,18 +495,16 @@ persistent actor {
 
     Debug.print("Verification result: " # sourceUserId # " following " # targetUsername # " = " # (if (isFollowing) "true" else "false"));
 
-    #success(isFollowing)
+    #success(isFollowing);
   };
 
   // Helper function to parse Twitter API response and check if target user is followed
-  private func checkIfUserIsFollowed(responseJson: Text, targetUsername: Text) : Bool {
+  private func checkIfUserIsFollowed(responseJson : Text, targetUsername : Text) : Bool {
     // Simple string-based parsing for the username in the response
     // In a production system, you might want to use a proper JSON parser
     let searchPattern = "\"username\":\"" # targetUsername # "\"";
-    Text.contains(responseJson, #text searchPattern)
+    Text.contains(responseJson, #text searchPattern);
   };
-
-
 
   public query func greet(name : Text) : async Text {
     return "Hello, " # name # "!";

@@ -8,8 +8,12 @@
       }
     },
     "poi_frontend": {
-      "dependencies": ["poi_backend"],
-      "source": ["src/poi_frontend/dist"],
+      "dependencies": [
+        "poi_backend"
+      ],
+      "source": [
+        "src/poi_frontend/dist"
+      ],
       "type": "assets",
       "workspace": "poi_frontend"
     },
@@ -27,7 +31,7 @@
   "defaults": {
     "build": {
       "args": "",
-      "packtool": ""
+      "packtool": "mops sources"
     }
   },
   "output_env_file": ".env",
