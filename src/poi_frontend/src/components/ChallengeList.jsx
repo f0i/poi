@@ -161,18 +161,18 @@ function ChallengeList() {
 
             <div>
               <label className="label">
-                User to Follow
+                User ID to Follow
               </label>
               <input
                 type="text"
                 value={newChallenge.userToFollow}
                 onChange={(e) => setNewChallenge({...newChallenge, userToFollow: e.target.value})}
                 className="input-field w-full"
-                placeholder="e.g., octocat"
+                placeholder="e.g., 2244994945"
                 required
               />
               <p className="text-slate-400 text-sm mt-1">
-                Enter the username of the person to follow
+                Enter the numeric user ID of the person to follow (not username)
               </p>
             </div>
 
@@ -242,7 +242,7 @@ function ChallengeList() {
                           <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                           </svg>
-                          <span className="text-slate-300">Follow user:</span>
+                          <span className="text-slate-300">Follow user ID:</span>
                           <code className="bg-slate-600 px-2 py-1 rounded text-blue-400 font-mono text-sm">
                             {challenge.challengeType.follows.user}
                           </code>
@@ -296,9 +296,9 @@ function ChallengeList() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <span className="font-medium">Challenge Verified!</span>
-                                <span className="ml-2 text-sm text-slate-400">
-                                  You are following @{challenge.challengeType.follows.user}
-                                </span>
+                                 <span className="ml-2 text-sm text-slate-400">
+                                   You are following user ID {challenge.challengeType.follows.user}
+                                 </span>
                               </div>
                             ) : (
                               <div className="flex items-center text-yellow-400">
@@ -306,9 +306,9 @@ function ChallengeList() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                 </svg>
                                 <span className="font-medium">Not Verified</span>
-                                <span className="ml-2 text-sm text-slate-400">
-                                  You are not following @{challenge.challengeType.follows.user}
-                                </span>
+                                 <span className="ml-2 text-sm text-slate-400">
+                                   You are not following user ID {challenge.challengeType.follows.user}
+                                 </span>
                               </div>
                             )
                           ) : (

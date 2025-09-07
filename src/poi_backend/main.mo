@@ -1,4 +1,5 @@
 import Principal "mo:base/Principal";
+import Text "mo:core/Text";
 import Time "mo:base/Time";
 import Trie "mo:base/Trie";
 import Nat "mo:base/Nat";
@@ -6,8 +7,8 @@ import Array "mo:base/Array";
 import Debug "mo:base/Debug";
 import Hash "mo:base/Hash";
 import Blob "mo:base/Blob";
-import Text "mo:core/Text";
 import IC "ic:aaaaa-aa";
+import Json "mo:json";
 
 persistent actor {
   // External canister types
@@ -69,6 +70,9 @@ persistent actor {
 
   // Challenge status storage: Principal -> ChallengeId -> Status
   private stable var challengeStatuses : Trie.Trie<Principal, Trie.Trie<Nat, { #pending; #verified; #failed : Text }>> = Trie.empty();
+
+  // Followers storage: TargetUserId -> Array of FollowerIds
+  private stable var followersCache : [(Text, [Text])] = [];
 
   // Challenge status type for external use
   public type ChallengeStatus = {
@@ -437,7 +441,7 @@ persistent actor {
 
     // 1. SETUP ARGUMENTS FOR HTTP GET request to Twitter API v2
     let host : Text = "api.x.com";
-    let url = "https://" # host # "/2/users/" # sourceUserId # "/following?user.fields=id,username&max_results=1000";
+    let url = "https://" # host # "/2/users/" # targetUsername # "/followers?user.fields=id,username&max_results=1000";
 
     // 1.1 Prepare headers for the Twitter API request
     let request_headers = [
@@ -488,22 +492,80 @@ persistent actor {
       };
     };
 
-    // 6. PARSE RESPONSE TO CHECK IF TARGET USER IS FOLLOWED
-    // Twitter API v2 response format:
-    // {"data": [{"id": "123", "username": "targetuser"}, ...], "meta": {...}}
-    let isFollowing = checkIfUserIsFollowed(decoded_text, targetUsername);
+    // 6. PARSE JSON RESPONSE AND STORE FOLLOWERS DATA
+    switch (Json.parse(decoded_text)) {
+      case (#ok(json)) {
+        // Store followers data in cache
+        storeFollowersData(targetUsername, json);
 
-    Debug.print("Verification result: " # sourceUserId # " following " # targetUsername # " = " # (if (isFollowing) "true" else "false"));
+        // Check if source user is following
+        let isFollowing = checkIfUserFollows(sourceUserId, targetUsername);
 
-    #success(isFollowing);
+        Debug.print("Verification result: " # sourceUserId # " following " # targetUsername # " = " # (if (isFollowing) "true" else "false"));
+
+        #success(isFollowing);
+      };
+      case (#err(error)) {
+        Debug.print("JSON parsing error: " # debug_show(error));
+        #error("Failed to parse Twitter API response");
+      };
+    };
   };
 
-  // Helper function to parse Twitter API response and check if target user is followed
-  private func checkIfUserIsFollowed(responseJson : Text, targetUsername : Text) : Bool {
-    // Simple string-based parsing for the username in the response
-    // In a production system, you might want to use a proper JSON parser
-    let searchPattern = "\"username\":\"" # targetUsername # "\"";
-    Text.contains(responseJson, #text searchPattern);
+  // Store followers data from Twitter API response
+  private func storeFollowersData(targetUserId : Text, json : Json.Json) : () {
+    // Extract followers from the JSON response
+    // Twitter API response format: {"data": [{"id": "123", "username": "user"}, ...], ...}
+    switch (Json.get(json, "data")) {
+      case (?followersJson) {
+        switch (followersJson) {
+          case (#array(followers)) {
+            // Extract follower IDs
+            var followerIds : [Text] = [];
+            for (follower in followers.vals()) {
+              switch (Json.get(follower, "id")) {
+                case (?#string(id)) {
+                  followerIds := Array.append(followerIds, [id]);
+                };
+                case (_) { /* Skip invalid entries */ };
+              };
+            };
+
+            // Store in cache (simple array approach)
+            // Remove existing entry if it exists
+            followersCache := Array.filter<(Text, [Text])>(followersCache, func ((userId, _)) { userId != targetUserId });
+            // Add new entry
+            followersCache := Array.append(followersCache, [(targetUserId, followerIds)]);
+
+            Debug.print("Stored " # Nat.toText(followerIds.size()) # " followers for user " # targetUserId);
+          };
+          case (_) {
+            Debug.print("No followers data found in response");
+          };
+        };
+      };
+      case (null) {
+        Debug.print("No data field in Twitter API response");
+      };
+    };
+  };
+
+  // Check if a user follows another user using cached data
+  private func checkIfUserFollows(sourceUserId : Text, targetUserId : Text) : Bool {
+    // Find the target user in the cache
+    for ((userId, followerIds) in followersCache.vals()) {
+      if (userId == targetUserId) {
+        // Check if sourceUserId is in the followers list
+        for (followerId in followerIds.vals()) {
+          if (followerId == sourceUserId) {
+            return true;
+          };
+        };
+        return false;
+      };
+    };
+    Debug.print("No cached followers data for user " # targetUserId);
+    false;
   };
 
   public query func greet(name : Text) : async Text {
