@@ -5,14 +5,20 @@
       "type": "motoko"
     },
     "poi_frontend": {
-      "dependencies": [
-        "poi_backend"
-      ],
-      "source": [
-        "src/poi_frontend/dist"
-      ],
+      "dependencies": ["poi_backend"],
+      "source": ["src/poi_frontend/dist"],
       "type": "assets",
       "workspace": "poi_frontend"
+    },
+    "user_data_backend": {
+      "type": "custom",
+      "candid": "identify.did",
+      "wasm": "identify.wasm",
+      "remote": {
+        "id": {
+          "ic": "fhzgg-waaaa-aaaah-aqzvq-cai"
+        }
+      }
     }
   },
   "defaults": {

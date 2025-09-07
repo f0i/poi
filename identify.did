@@ -1,0 +1,121 @@
+type http_request_result = 
+ record {
+   body: blob;
+   headers: vec http_header;
+   status: nat;
+ };
+type http_header = 
+ record {
+   name: text;
+   value: text;
+ };
+type User = 
+ record {
+   avatar_url: opt text;
+   bio: opt text;
+   createdAt: Time;
+   email: opt text;
+   email_verified: opt bool;
+   followers_count: opt nat;
+   following_count: opt nat;
+   id: text;
+   location: opt text;
+   name: opt text;
+   origin: text;
+   provider: Provider;
+   provider_created_at: opt text;
+   public_gists: opt nat;
+   public_repos: opt nat;
+   tweet_count: opt nat;
+   username: opt text;
+   verified: opt bool;
+   website: opt text;
+ };
+type TransformResult = 
+ record {
+   body: blob;
+   headers: vec http_header;
+   status: nat;
+ };
+type TransformArgs = 
+ record {
+   context: blob;
+   response: http_request_result;
+ };
+type Time = int;
+type Result_1 = 
+ variant {
+   err: text;
+   ok;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok: record {auth: AuthResponse;};
+ };
+type Provider = 
+ variant {
+   auth0;
+   github;
+   google;
+   x;
+   zitadel;
+ };
+type PrepRes = 
+ variant {
+   err: text;
+   ok: record {
+         expireAt: Time;
+         pubKey: vec nat8;
+       };
+ };
+type Main = 
+ service {
+   addMod: (user: principal) -> (Result_1);
+   checkEmail: ("principal": principal, email: text) -> (bool) query;
+   /// Get cycle balance of the backend canister
+   getBalance: () -> (record {
+                        "text": text;
+                        val: nat;
+                      }) query;
+   getDelegation: (provider: Provider, origin: text, sessionKey: vec nat8,
+    expireAt: Time, targets: opt vec principal) -> (Result) query;
+   /// Get an email address for a principal
+   /// This function can only be called from whitelisted principals, usually the backend canister of an app
+   getEmail: ("principal": principal, origin: text) -> (opt text) query;
+   /// Get principal and some user info of the caller
+   getPrincipal: () -> (principal) query;
+   getStats: () -> (vec text) query;
+   /// Get an email address for a principal
+   /// This function can only be called from whitelisted principals, usually the backend canister of an app
+   getUser: ("principal": principal, origin: text) -> (opt User) query;
+   info: () -> (text) query;
+   /// Verify the token and prepare a delegation.
+   /// The delegation can be fetched using an query call to getDelegation.
+   prepareDelegation: (provider: Provider, token: text, origin: text,
+    sessionKey: vec nat8, expireIn: nat, targets: opt vec principal) ->
+    (PrepRes);
+   prepareDelegationPKCE: (provider: Provider, code: text, verifier: 
+    text, origin: text, sessionKey: vec nat8, expireIn: nat, targets:
+    opt vec principal) -> (PrepRes);
+   transform: (raw: TransformArgs) -> (TransformResult) query;
+   transformKeys: (raw: TransformArgs) -> (TransformResult) query;
+ };
+type Delegation = 
+ record {
+   delegation:
+    record {
+      expiration: int;
+      pubkey: vec nat8;
+      targets: opt vec principal;
+    };
+   signature: vec nat8;
+ };
+type AuthResponse = 
+ record {
+   authnMethod: text;
+   delegations: vec Delegation;
+   kind: text;
+   userPublicKey: vec nat8;
+ };
+service : () -> Main
