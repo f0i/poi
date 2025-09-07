@@ -64,11 +64,8 @@ export const AuthProvider = ({ children }) => {
     if (!authClient) return;
 
     try {
-      await authClient.login({
-        identityProvider:
-          process.env.DFX_NETWORK === "ic"
-            ? "https://login.f0i.de?provider=x"
-            : `http://localhost:4943/?canisterId=${process.env.CANISTER_ID_INTERNET_IDENTITY}`,
+      // Configure login with maximum session duration and disabled idle timeout
+      const loginOptions = {
         onSuccess: async () => {
           setIsAuthenticated(true);
           const userIdentity = authClient.getIdentity();
@@ -78,7 +75,17 @@ export const AuthProvider = ({ children }) => {
         onError: (error) => {
           console.error("Login failed:", error);
         },
-      });
+      };
+
+      // Set maximum session duration (30 days) and disable idle timeout
+      if (process.env.DFX_NETWORK === "ic") {
+        loginOptions.identityProvider = "https://login.f0i.de?provider=x&maxTimeToLive=2592000000000000&disableIdle=true";
+      } else {
+        const baseUrl = `http://localhost:4943/?canisterId=${process.env.CANISTER_ID_INTERNET_IDENTITY}`;
+        loginOptions.identityProvider = `${baseUrl}&maxTimeToLive=2592000000000000&disableIdle=true`;
+      }
+
+      await authClient.login(loginOptions);
     } catch (error) {
       console.error("Login error:", error);
     }

@@ -95,5 +95,27 @@ export class ChallengeService {
       return false;
     }
   }
+
+  async verifyChallenge(id: bigint): Promise<{ success: boolean } | { error: string }> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.verifyChallenge(id);
+      return result;
+    } catch (error) {
+      console.error("Failed to verify challenge:", error);
+      return { error: "Verification failed" };
+    }
+  }
+
+  async getChallengeStatus(id: bigint): Promise<{ pending: null } | { verified: null } | { failed: string } | null> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.getChallengeStatus(id);
+      return result.length > 0 ? result[0] : null;
+    } catch (error) {
+      console.error("Failed to get challenge status:", error);
+      return null;
+    }
+  }
 }
 

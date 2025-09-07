@@ -2,7 +2,10 @@
   "canisters": {
     "poi_backend": {
       "main": "src/poi_backend/main.mo",
-      "type": "motoko"
+      "type": "motoko",
+      "http": {
+        "enabled": true
+      }
     },
     "poi_frontend": {
       "dependencies": ["poi_backend"],

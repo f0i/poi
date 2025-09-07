@@ -11,6 +11,9 @@ function ChallengeList() {
     description: '',
     userToFollow: ''
   });
+  const [verifyingChallenge, setVerifyingChallenge] = useState(null);
+  const [verificationResults, setVerificationResults] = useState({});
+  const [challengeStatuses, setChallengeStatuses] = useState({});
 
   const challengeService = new ChallengeService(identity);
 
@@ -25,11 +28,27 @@ function ChallengeList() {
     try {
       const result = await challengeService.getChallenges();
       setChallenges(result);
+      await loadChallengeStatuses(result);
     } catch (error) {
       console.error('Failed to load challenges:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadChallengeStatuses = async (challengesList) => {
+    const statuses = {};
+    for (const challenge of challengesList) {
+      try {
+        const status = await challengeService.getChallengeStatus(challenge.id);
+        if (status) {
+          statuses[challenge.id] = status;
+        }
+      } catch (error) {
+        console.error(`Failed to load status for challenge ${challenge.id}:`, error);
+      }
+    }
+    setChallengeStatuses(statuses);
   };
 
   const handleCreateChallenge = async (e) => {
@@ -55,6 +74,34 @@ function ChallengeList() {
       } catch (error) {
         console.error('Failed to delete challenge:', error);
       }
+    }
+  };
+
+  const handleVerifyChallenge = async (challengeId) => {
+    setVerifyingChallenge(challengeId);
+    try {
+      const result = await challengeService.verifyChallenge(challengeId);
+      setVerificationResults(prev => ({
+        ...prev,
+        [challengeId]: result
+      }));
+
+      // Refresh challenge status after verification
+      const status = await challengeService.getChallengeStatus(challengeId);
+      if (status) {
+        setChallengeStatuses(prev => ({
+          ...prev,
+          [challengeId]: status
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to verify challenge:', error);
+      setVerificationResults(prev => ({
+        ...prev,
+        [challengeId]: { error: 'Verification failed' }
+      }));
+    } finally {
+      setVerifyingChallenge(null);
     }
   };
 
@@ -201,25 +248,114 @@ function ChallengeList() {
                           </code>
                         </div>
 
-                        <div className="flex items-center space-x-4 text-sm text-slate-400">
-                          <span className="flex items-center">
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
-                            ID: {challenge.id.toString()}
-                          </span>
-                        </div>
+                         <div className="flex items-center space-x-4 text-sm text-slate-400">
+                           <span className="flex items-center">
+                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                             </svg>
+                             ID: {challenge.id.toString()}
+                           </span>
+
+                           {/* Status Badge */}
+                           {challengeStatuses[challenge.id] && (
+                             <div className="flex items-center">
+                               {challengeStatuses[challenge.id].verified !== undefined ? (
+                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                   <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                   </svg>
+                                   Verified
+                                 </span>
+                               ) : challengeStatuses[challenge.id].pending !== undefined ? (
+                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                   <svg className="w-3 h-3 mr-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                   </svg>
+                                   Pending
+                                 </span>
+                               ) : challengeStatuses[challenge.id].failed ? (
+                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                   <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                   </svg>
+                                   Failed
+                                 </span>
+                               ) : null}
+                             </div>
+                           )}
+                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleDeleteChallenge(challenge.id)}
-                        className="btn-danger ml-4 flex-shrink-0"
-                        title="Delete challenge"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                      {/* Verification Result */}
+                      {verificationResults[challenge.id] && (
+                        <div className="mt-3 p-3 rounded-lg border">
+                          {verificationResults[challenge.id].success !== undefined ? (
+                            verificationResults[challenge.id].success ? (
+                              <div className="flex items-center text-green-400">
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span className="font-medium">Challenge Verified!</span>
+                                <span className="ml-2 text-sm text-slate-400">
+                                  You are following @{challenge.challengeType.follows.user}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center text-yellow-400">
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                                <span className="font-medium">Not Verified</span>
+                                <span className="ml-2 text-sm text-slate-400">
+                                  You are not following @{challenge.challengeType.follows.user}
+                                </span>
+                              </div>
+                            )
+                          ) : (
+                            <div className="flex items-center text-red-400">
+                              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                              <span className="font-medium">Verification Failed</span>
+                              <span className="ml-2 text-sm text-slate-400">
+                                {verificationResults[challenge.id].error}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                       <div className="flex space-x-2 ml-4 flex-shrink-0">
+                         {(!challengeStatuses[challenge.id] || challengeStatuses[challenge.id].verified === undefined) && (
+                           <button
+                             onClick={() => handleVerifyChallenge(challenge.id)}
+                             disabled={verifyingChallenge === challenge.id}
+                             className="btn-primary text-sm px-3 py-1"
+                             title="Verify challenge"
+                           >
+                             {verifyingChallenge === challenge.id ? (
+                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                             ) : (
+                               <>
+                                 <svg className="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                 </svg>
+                                 Verify
+                               </>
+                             )}
+                           </button>
+                         )}
+
+                        <button
+                          onClick={() => handleDeleteChallenge(challenge.id)}
+                          className="btn-danger text-sm px-3 py-1"
+                          title="Delete challenge"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}

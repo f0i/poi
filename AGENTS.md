@@ -26,3 +26,8 @@
 - **No semicolons**: ES modules style (optional semicolons)
 - **Single quotes**: For string literals
 - **No comments**: Unless explicitly requested by user
+
+## Styling
+- **CSS Framework**: Tailwind CSS v4 with dark theme
+- **Build Process**: Integrated with dfx build system
+- **PostCSS**: Configured for Tailwind CSS v4
