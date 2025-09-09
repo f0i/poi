@@ -118,34 +118,44 @@ export class ChallengeService {
     }
   }
 
-  async isTwitterBearerTokenSet(): Promise<boolean> {
+  async isApifyBearerTokenSet(): Promise<boolean> {
     try {
       const actor = this.getActor();
-      const result = await actor.isTwitterBearerTokenSet();
+      const result = await actor.isApifyBearerTokenSet();
       return result;
     } catch (error) {
-      console.error("Failed to check Twitter Bearer Token status:", error);
+      console.error("Failed to check Apify Bearer Token status:", error);
       return false;
     }
   }
 
-  async getTwitterBearerTokenMasked(): Promise<string | null> {
+  async getApifyBearerTokenMasked(): Promise<string | null> {
     try {
       const actor = this.getActor();
-      const result = await actor.getTwitterBearerTokenMasked();
+      const result = await actor.getApifyBearerTokenMasked();
       return result.length > 0 ? result[0] : null;
     } catch (error) {
-      console.error("Failed to get masked Twitter Bearer Token:", error);
+      console.error("Failed to get masked Apify Bearer Token:", error);
       return null;
     }
   }
 
-  async setTwitterBearerToken(token: string): Promise<void> {
+  async setApifyBearerToken(token: string): Promise<void> {
     try {
       const actor = this.getActor();
-      await actor.setTwitterBearerToken(token);
+      await actor.setApifyBearerToken(token);
     } catch (error) {
-      console.error("Failed to set Twitter Bearer Token:", error);
+      console.error("Failed to set Apify Bearer Token:", error);
+      throw error;
+    }
+  }
+
+  async setApifyCookies(cookies: string): Promise<void> {
+    try {
+      const actor = this.getActor();
+      await actor.setApifyCookies(cookies);
+    } catch (error) {
+      console.error("Failed to set Apify Cookies:", error);
       throw error;
     }
   }

@@ -6,9 +6,11 @@ function Settings() {
   const { isAuthenticated, identity } = useAuth();
   const [tokenSet, setTokenSet] = useState(false);
   const [tokenMasked, setTokenMasked] = useState(null);
+  const [cookiesSet, setCookiesSet] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showTokenForm, setShowTokenForm] = useState(false);
   const [newToken, setNewToken] = useState('');
+  const [newCookies, setNewCookies] = useState('');
   const [saving, setSaving] = useState(false);
 
   const challengeService = new ChallengeService(identity);
@@ -23,11 +25,13 @@ function Settings() {
     setLoading(true);
     try {
       const [isSet, masked] = await Promise.all([
-        challengeService.isTwitterBearerTokenSet(),
-        challengeService.getTwitterBearerTokenMasked()
+        challengeService.isApifyBearerTokenSet(),
+        challengeService.getApifyBearerTokenMasked()
       ]);
       setTokenSet(isSet);
       setTokenMasked(masked);
+      // For cookies, we don't have a getter, so just check if token is set (assuming both are set together)
+      setCookiesSet(isSet);
     } catch (error) {
       console.error('Failed to load token status:', error);
     } finally {
@@ -37,18 +41,22 @@ function Settings() {
 
   const handleSetToken = async (e) => {
     e.preventDefault();
-    if (!newToken.trim()) return;
+    if (!newToken.trim() || !newCookies.trim()) return;
 
     setSaving(true);
     try {
       // Note: In a real app, you'd want to add authentication/authorization here
       // For now, this is a simple implementation
-      await challengeService.setTwitterBearerToken(newToken.trim());
+      await Promise.all([
+        challengeService.setApifyBearerToken(newToken.trim()),
+        challengeService.setApifyCookies(newCookies.trim())
+      ]);
       setNewToken('');
+      setNewCookies('');
       setShowTokenForm(false);
       await loadTokenStatus(); // Refresh status
     } catch (error) {
-      console.error('Failed to set token:', error);
+      console.error('Failed to set token and cookies:', error);
     } finally {
       setSaving(false);
     }
@@ -71,20 +79,20 @@ function Settings() {
       </div>
 
       <div className="space-y-6">
-        {/* Twitter API Configuration */}
+        {/* Apify API Configuration */}
         <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-lg font-semibold text-white flex items-center">
               <svg className="w-5 h-5 mr-2 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
               </svg>
-              Twitter API Configuration
+              Apify API Configuration
             </h4>
             <button
               onClick={() => setShowTokenForm(!showTokenForm)}
               className={showTokenForm ? "btn-secondary" : "btn-primary"}
             >
-              {showTokenForm ? 'Cancel' : 'Configure Token'}
+              {showTokenForm ? 'Cancel' : 'Configure API'}
             </button>
           </div>
 
@@ -108,18 +116,26 @@ function Settings() {
                   </div>
                 )}
               </div>
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <div className={`w-3 h-3 rounded-full ${cookiesSet ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className="text-slate-300">
+                    Cookies: {cookiesSet ? 'Set' : 'Not Set'}
+                  </span>
+                </div>
+              </div>
 
-              {!tokenSet && (
+              {(!tokenSet || !cookiesSet) && (
                 <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4">
                   <div className="flex items-start space-x-3">
                     <svg className="w-5 h-5 text-yellow-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
                     <div>
-                      <h5 className="text-yellow-400 font-medium">Twitter API Token Required</h5>
+                      <h5 className="text-yellow-400 font-medium">Apify API Configuration Required</h5>
                       <p className="text-yellow-300 text-sm mt-1">
-                        Set a valid Twitter API Bearer Token to enable challenge verification.
-                        Get your token from the <a href="https://developer.twitter.com/en/portal/dashboard" target="_blank" rel="noopener noreferrer" className="underline hover:text-yellow-200">Twitter Developer Portal</a>.
+                        Set a valid Apify Bearer Token and cookies string to enable challenge verification.
+                        Get your token from the <a href="https://console.apify.com/" target="_blank" rel="noopener noreferrer" className="underline hover:text-yellow-200">Apify Console</a>.
                       </p>
                     </div>
                   </div>
@@ -128,7 +144,7 @@ function Settings() {
 
               {showTokenForm && (
                 <form onSubmit={handleSetToken} className="bg-slate-600 rounded-lg p-4 border border-slate-500">
-                  <h5 className="text-white font-medium mb-3">Set Twitter Bearer Token</h5>
+                  <h5 className="text-white font-medium mb-3">Set Apify API Configuration</h5>
                   <div className="space-y-3">
                     <div>
                       <label className="label text-sm">
@@ -139,11 +155,27 @@ function Settings() {
                         value={newToken}
                         onChange={(e) => setNewToken(e.target.value)}
                         className="input-field w-full"
-                        placeholder="Enter your Twitter API Bearer Token"
+                        placeholder="Enter your Apify Bearer Token"
                         required
                       />
                       <p className="text-slate-400 text-xs mt-1">
                         Your token will be stored securely and only the last 5 characters will be displayed for verification.
+                      </p>
+                    </div>
+                    <div>
+                      <label className="label text-sm">
+                        Cookies String
+                      </label>
+                      <textarea
+                        value={newCookies}
+                        onChange={(e) => setNewCookies(e.target.value)}
+                        className="input-field w-full"
+                        placeholder='Enter your cookies string (e.g., [{"name":"ct0","value":"your-csrf-token-here"}])'
+                        rows={3}
+                        required
+                      />
+                      <p className="text-slate-400 text-xs mt-1">
+                        Your cookies will be stored securely for Twitter API access.
                       </p>
                     </div>
                     <div className="flex space-x-3">
@@ -155,7 +187,7 @@ function Settings() {
                         {saving ? (
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                         ) : (
-                          'Save Token'
+                          'Save Configuration'
                         )}
                       </button>
                       <button

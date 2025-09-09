@@ -1,5 +1,6 @@
 import Principal "mo:base/Principal";
 import Text "mo:core/Text";
+import Runtime "mo:core/Runtime";
 import Time "mo:base/Time";
 import Trie "mo:base/Trie";
 import Nat "mo:base/Nat";
@@ -65,8 +66,11 @@ persistent actor {
   // External canister ID
   private let USER_DATA_CANISTER_ID = "fhzgg-waaaa-aaaah-aqzvq-cai";
 
-  // Twitter API Bearer Token (write-only, no getter)
-  private stable var twitterBearerToken : Text = "";
+  // Apify API Bearer Token (write-only, no getter)
+  private stable var apifyBearerToken : Text = "";
+
+  // Apify cookies string
+  private stable var apifyCookies : Text = "";
 
   // Challenge status storage: Principal -> ChallengeId -> Status
   private stable var challengeStatuses : Trie.Trie<Principal, Trie.Trie<Nat, { #pending; #verified; #failed : Text }>> = Trie.empty();
@@ -81,11 +85,81 @@ persistent actor {
     #failed : Text;
   };
 
+  // Apify API response types
+  type ApifyRunResponse = {
+    data : ApifyRunData;
+  };
+
+  type ApifyRunData = {
+    id : Text;
+    actId : Text;
+    userId : Text;
+    startedAt : Text;
+    finishedAt : ?Text;
+    status : Text;
+    meta : ApifyMeta;
+    stats : ApifyStats;
+    options : ApifyOptions;
+    buildId : Text;
+    defaultKeyValueStoreId : Text;
+    defaultDatasetId : Text;
+    defaultRequestQueueId : Text;
+    pricingInfo : ApifyPricingInfo;
+    platformUsageBillingModel : Text;
+    generalAccess : Text;
+    buildNumber : Text;
+    containerUrl : Text;
+  };
+
+  type ApifyMeta = {
+    origin : Text;
+    userAgent : Text;
+  };
+
+  type ApifyStats = {
+    inputBodyLen : Nat;
+    migrationCount : Nat;
+    rebootCount : Nat;
+    restartCount : Nat;
+    resurrectCount : Nat;
+    computeUnits : Nat;
+  };
+
+  type ApifyOptions = {
+    build : Text;
+    memoryMbytes : Nat;
+    timeoutSecs : Nat;
+    maxItems : Nat;
+    diskMbytes : Nat;
+  };
+
+  type ApifyPricingInfo = {
+    pricePerUnitUsd : Float;
+    unitName : Text;
+    pricingModel : Text;
+    isPriceChangeNotificationSuppressed : Bool;
+    startedAt : Text;
+    createdAt : Text;
+    apifyMarginPercentage : Float;
+    notifiedAboutFutureChangeAt : Text;
+    notifiedAboutChangeAt : Text;
+  };
+
+  // Dataset response types
+  type ApifyDatasetResponse = {
+    data : [ApifyDatasetItem];
+  };
+
+  type ApifyDatasetItem = {
+    isFollowing : Bool;
+  };
+
   // Transform function for HTTP requests
   public query func transform({
     context : Blob;
     response : IC.http_request_result;
   }) : async IC.http_request_result {
+    ignore context;
     {
       response with headers = []; // not interested in headers for Twitter API
     };
@@ -315,27 +389,36 @@ persistent actor {
     ).0;
   };
 
-  // Set Twitter Bearer Token (write-only, no getter for security)
-  public shared (msg) func setTwitterBearerToken(token : Text) : async () {
+  // Set Apify Bearer Token (write-only, no getter for security)
+  public shared (msg) func setApifyBearerToken(token : Text) : async () {
     let caller = msg.caller;
     // TODO: Add authorization check - only allow admin/owner to set this
 
-    twitterBearerToken := token;
-    Debug.print("Twitter Bearer Token updated by principal: " # Principal.toText(caller));
+    apifyBearerToken := token;
+    Debug.print("Apify Bearer Token updated by principal: " # Principal.toText(caller));
   };
 
-  // Check if Twitter Bearer Token is set
-  public query func isTwitterBearerTokenSet() : async Bool {
-    Text.size(twitterBearerToken) > 0;
+  // Set Apify Cookies
+  public shared (msg) func setApifyCookies(cookies : Text) : async () {
+    let caller = msg.caller;
+    // TODO: Add authorization check - only allow admin/owner to set this
+
+    apifyCookies := cookies;
+    Debug.print("Apify Cookies updated by principal: " # Principal.toText(caller));
   };
 
-  // Get masked Twitter Bearer Token (last 5 characters)
-  public query func getTwitterBearerTokenMasked() : async ?Text {
-    let tokenLength = Text.size(twitterBearerToken);
+  // Check if Apify Bearer Token is set
+  public query func isApifyBearerTokenSet() : async Bool {
+    Text.size(apifyBearerToken) > 0;
+  };
+
+  // Get masked Apify Bearer Token (last 5 characters)
+  public query func getApifyBearerTokenMasked() : async ?Text {
+    let tokenLength = Text.size(apifyBearerToken);
     if (tokenLength < 20) {
       null;
     } else {
-      let text = Text.reverse(twitterBearerToken);
+      let text = Text.reverse(apifyBearerToken);
       let tokens = text.chars();
       let ?a = tokens.next() else return null;
       let ?b = tokens.next() else return null;
@@ -382,7 +465,7 @@ persistent actor {
                   switch (cachedUser.user.provider) {
                     case (#x) {
                       // User has Twitter/X account, proceed with verification
-                      let result = await verifyTwitterFollowing(caller, cachedUser.user.id, targetUser.user);
+                      let result = await verifyTwitterFollowing(caller, cachedUser.user.username, targetUser.user);
                       switch (result) {
                         case (#success(isFollowing)) {
                           if (isFollowing) {
@@ -427,26 +510,37 @@ persistent actor {
     };
   };
 
-  // Helper function to verify Twitter following relationship
-  private func verifyTwitterFollowing(caller : Principal, sourceUserId : Text, targetUsername : Text) : async {
+  // Helper function to verify Twitter following relationship using Apify
+  private func verifyTwitterFollowing(caller : Principal, sourceUsername : ?Text, targetUsername : Text) : async {
     #success : Bool;
     #error : Text;
   } {
-    // Check if Bearer token is set
-    if (Text.size(twitterBearerToken) == 0) {
-      return #error("Twitter API token not configured");
+    // Check if source username is available
+    let ?sourceUser = sourceUsername else {
+      return #error("Source user username not available");
     };
 
-    Debug.print("Verifying Twitter following: " # sourceUserId # " -> " # targetUsername);
+    // Check if Apify token and cookies are set
+    if (Text.size(apifyBearerToken) == 0) {
+      return #error("Apify API token not configured");
+    };
+    if (Text.size(apifyCookies) == 0) {
+      return #error("Apify cookies not configured");
+    };
 
-    // 1. SETUP ARGUMENTS FOR HTTP GET request to Twitter API v2
-    let host : Text = "api.x.com";
-    let url = "https://" # host # "/2/users/" # targetUsername # "/followers?user.fields=id,username&max_results=1000";
+    Debug.print("Verifying Twitter following: " # sourceUser # " -> " # targetUsername);
 
-    // 1.1 Prepare headers for the Twitter API request
+    // 1. SETUP ARGUMENTS FOR HTTP POST request to Apify
+    let url = "https://api.apify.com/v2/acts/UC0t7r32caYf7tYgZ/runs?token=" # apifyBearerToken;
+    let bodyText = "{"
+    # "\"user_a\": \"" # sourceUser # "\","
+    # "\"user_b\": \"" # targetUsername # "\","
+    # "\"cookies\": " # "\"" # apifyCookies # "\""
+    # "}";
+
+    // 1.1 Prepare headers for the Apify request
     let request_headers = [
-      { name = "Authorization"; value = "Bearer " # twitterBearerToken },
-      { name = "User-Agent"; value = "poi-verification/1.0" },
+      { name = "Content-Type"; value = "application/json" },
     ];
 
     // 1.2 The HTTP request
@@ -454,60 +548,140 @@ persistent actor {
       url = url;
       max_response_bytes = ?(1024 * 1024); // 1MB max response
       headers = request_headers;
-      body = null; // GET request, no body
-      method = #get;
+      body = ?Text.encodeUtf8(bodyText);
+      method = #post;
       transform = ?{
         function = transform;
         context = Blob.fromArray([]);
       };
-      // Toggle this flag to switch between replicated and non-replicated http outcalls.
       is_replicated = ?false;
     };
 
-    // 2. MAKE HTTPS REQUEST AND WAIT FOR RESPONSE, BUT MAKE SURE TO ADD CYCLES
-    // Twitter API calls typically need around 100-200 billion cycles
+    // 2. MAKE HTTPS REQUEST AND WAIT FOR RESPONSE
     let http_response : IC.http_request_result = await (with cycles = 200_000_000_000) IC.http_request(http_request);
 
-    // 4. PROCESS THE RESPONSE
+    // 3. PROCESS THE RESPONSE
     let decoded_text : Text = switch (Text.decodeUtf8(http_response.body)) {
       case (null) { return #error("Failed to decode response body") };
       case (?y) { y };
     };
 
-    Debug.print("Twitter API response status: " # Nat.toText(http_response.status));
-    Debug.print("Twitter API response: " # decoded_text);
+    Debug.print("Apify API response status: " # Nat.toText(http_response.status));
+    Debug.print("Apify API response: " # decoded_text);
 
-    // 5. CHECK HTTP STATUS CODE
-    if (http_response.status != 200) {
+    // 4. CHECK HTTP STATUS CODE
+    if (http_response.status != 201) {
       switch (http_response.status) {
         case (401) {
-          return #error("Twitter API authentication failed - check bearer token");
+          return #error("Apify API authentication failed - check bearer token");
         };
-        case (403) { return #error("Twitter API access forbidden") };
-        case (404) { return #error("Twitter user not found") };
-        case (429) { return #error("Twitter API rate limit exceeded") };
+        case (403) { return #error("Apify API access forbidden") };
+        case (404) { return #error("Apify actor not found") };
+        case (429) { return #error("Apify API rate limit exceeded") };
         case (_) {
-          return #error("Twitter API error: HTTP " # Nat.toText(http_response.status));
+          return #error("Apify API error: HTTP " # Nat.toText(http_response.status));
         };
       };
     };
 
-    // 6. PARSE JSON RESPONSE AND STORE FOLLOWERS DATA
+    // 5. PARSE JSON RESPONSE TO GET DATASET ID
     switch (Json.parse(decoded_text)) {
       case (#ok(json)) {
-        // Store followers data in cache
-        storeFollowersData(targetUsername, json);
-
-        // Check if source user is following
-        let isFollowing = checkIfUserFollows(sourceUserId, targetUsername);
-
-        Debug.print("Verification result: " # sourceUserId # " following " # targetUsername # " = " # (if (isFollowing) "true" else "false"));
-
-        #success(isFollowing);
+        // Extract dataset ID from response
+        switch (Json.get(json, "data")) {
+          case (?dataJson) {
+            switch (Json.get(dataJson, "defaultDatasetId")) {
+              case (?#string(datasetId)) {
+                // Now query the dataset results
+                let result = await getApifyDatasetResults(datasetId);
+                switch (result) {
+                  case (#success(isFollowing)) {
+                    Debug.print("Verification result: " # sourceUser # " following " # targetUsername # " = " # (if (isFollowing) "true" else "false"));
+                    #success(isFollowing);
+                  };
+                  case (#error(err)) {
+                    #error(err);
+                  };
+                };
+              };
+              case (_) {
+                #error("Failed to extract dataset ID from Apify response");
+              };
+            };
+          };
+          case (_) {
+            #error("No data field in Apify response");
+          };
+        };
       };
       case (#err(error)) {
         Debug.print("JSON parsing error: " # debug_show(error));
-        #error("Failed to parse Twitter API response");
+        #error("Failed to parse Apify API response");
+      };
+    };
+  };
+
+  // Helper function to get Apify dataset results
+  private func getApifyDatasetResults(datasetId : Text) : async {
+    #success : Bool;
+    #error : Text;
+  } {
+    let url = "https://api.apify.com/v2/datasets/" # datasetId # "/items?token=" # apifyBearerToken;
+
+    let request_headers = [
+      { name = "Content-Type"; value = "application/json" },
+    ];
+
+    let http_request : IC.http_request_args = {
+      url = url;
+      max_response_bytes = ?(1024 * 1024);
+      headers = request_headers;
+      body = null;
+      method = #get;
+      transform = ?{
+        function = transform;
+        context = Blob.fromArray([]);
+      };
+      is_replicated = ?false;
+    };
+
+    let http_response : IC.http_request_result = await (with cycles = 100_000_000_000) IC.http_request(http_request);
+
+    let decoded_text : Text = switch (Text.decodeUtf8(http_response.body)) {
+      case (null) { return #error("Failed to decode dataset response") };
+      case (?y) { y };
+    };
+
+    if (http_response.status != 200) {
+      return #error("Failed to get dataset results: HTTP " # Nat.toText(http_response.status));
+    };
+
+    // Parse the dataset results
+    switch (Json.parse(decoded_text)) {
+      case (#ok(json)) {
+        // The response should be an array of items directly
+        switch (json) {
+          case (#array(items)) {
+            if (items.size() > 0) {
+              switch (Json.get(items[0], "isFollowing")) {
+                case (?#bool(isFollowing)) {
+                  #success(isFollowing);
+                };
+                case (_) {
+                  #error("isFollowing field not found in dataset item");
+                };
+              };
+            } else {
+              #error("No items in dataset results");
+            };
+          };
+          case (_) {
+            #error("Dataset response is not an array");
+          };
+        };
+      };
+      case (#err(_)) {
+        #error("Failed to parse dataset JSON");
       };
     };
   };
@@ -533,7 +707,7 @@ persistent actor {
 
             // Store in cache (simple array approach)
             // Remove existing entry if it exists
-            followersCache := Array.filter<(Text, [Text])>(followersCache, func ((userId, _)) { userId != targetUserId });
+            followersCache := Array.filter<(Text, [Text])>(followersCache, func((userId, _)) { userId != targetUserId });
             // Add new entry
             followersCache := Array.append(followersCache, [(targetUserId, followerIds)]);
 
