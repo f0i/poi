@@ -80,6 +80,9 @@ persistent actor {
   // Followers storage: TargetUserId -> Array of FollowerIds
   private var followersCache : [(Text, [Text])] = [];
 
+  // Admin principal (set only once)
+  private var admin : ?Principal = null;
+
   // Challenge status type for external use
   public type ChallengeStatus = {
     #pending;
@@ -264,8 +267,11 @@ persistent actor {
   // Challenge CRUD operations
 
   // Create a new challenge
-  public shared ({ caller = _ }) func createChallenge(description : Text, challengeType : ChallengeType) : async Nat {
-    // TODO: Add authorization check if needed
+  public shared ({ caller }) func createChallenge(description : Text, challengeType : ChallengeType) : async Nat {
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can create challenges");
+    };
 
     let challengeId = nextChallengeId;
     nextChallengeId += 1;
@@ -277,7 +283,7 @@ persistent actor {
     };
     challenges := Array.append(challenges, [newChallenge]);
 
-    Debug.print("Created challenge: " # Nat.toText(challengeId) # " - " # description);
+    Debug.print("Challenge created by admin: " # Nat.toText(challengeId) # " - " # description);
 
     return challengeId;
   };
@@ -293,8 +299,11 @@ persistent actor {
   };
 
   // Update a challenge
-  public shared ({ caller = _ }) func updateChallenge(id : Nat, description : Text, challengeType : ChallengeType) : async Bool {
-    // TODO: Add authorization check if needed
+  public shared ({ caller }) func updateChallenge(id : Nat, description : Text, challengeType : ChallengeType) : async Bool {
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can update challenges");
+    };
 
     let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id) else {
       Debug.print("Challenge not found for update: " # Nat.toText(id));
@@ -312,13 +321,16 @@ persistent actor {
         if (i == index) { updatedChallenge } else { challenges[i] };
       },
     );
-    Debug.print("Updated challenge: " # Nat.toText(id));
+    Debug.print("Challenge updated by admin: " # Nat.toText(id));
     return true;
   };
 
   // Delete a challenge
-  public shared ({ caller = _ }) func deleteChallenge(id : Nat) : async Bool {
-    // TODO: Add authorization check if needed
+  public shared ({ caller }) func deleteChallenge(id : Nat) : async Bool {
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can delete challenges");
+    };
 
     let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id) else {
       Debug.print("Challenge not found for deletion: " # Nat.toText(id));
@@ -331,7 +343,7 @@ persistent actor {
         challenges[if (i < index) { i } else { i + 1 }];
       },
     );
-    Debug.print("Deleted challenge: " # Nat.toText(id));
+    Debug.print("Challenge deleted by admin: " # Nat.toText(id));
     return true;
   };
 
@@ -370,18 +382,61 @@ persistent actor {
 
   // Set Apify Bearer Token (write-only, no getter for security)
   public shared ({ caller }) func setApifyBearerToken(token : Text) : async () {
-    // TODO: Add authorization check - only allow admin/owner to set this
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can set Apify Bearer Token");
+    };
 
     apifyBearerToken := token;
-    Debug.print("Apify Bearer Token updated by principal: " # Principal.toText(caller));
+    Debug.print("Apify Bearer Token updated by admin: " # Principal.toText(caller));
   };
 
   // Set Apify Cookies
   public shared ({ caller }) func setApifyCookies(cookies : Text) : async () {
-    // TODO: Add authorization check - only allow admin/owner to set this
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can set Apify Cookies");
+    };
 
     apifyCookies := cookies;
-    Debug.print("Apify Cookies updated by principal: " # Principal.toText(caller));
+    Debug.print("Apify Cookies updated by admin: " # Principal.toText(caller));
+  };
+
+  // Set admin (can only be called once, by a non-anonymous principal)
+  public shared ({ caller }) func setAdmin() : async () {
+    // Check if caller is anonymous
+    if (Principal.isAnonymous(caller)) {
+      Debug.trap("Anonymous principals cannot be set as admin");
+    };
+
+    // Check if admin is already set
+    switch (admin) {
+      case (?_) {
+        Debug.trap("Admin is already set and cannot be changed");
+      };
+      case (null) {
+        // Set the admin to the caller
+        admin := ?caller;
+        Debug.print("Admin set to principal: " # Principal.toText(caller));
+      };
+    };
+  };
+
+  // Get current admin
+  public query func getAdmin() : async ?Principal {
+    return admin;
+  };
+
+  // Check if caller is admin
+  private func isCallerAdmin(caller : Principal) : Bool {
+    switch (admin) {
+      case (?adminPrincipal) {
+        return Principal.equal(caller, adminPrincipal);
+      };
+      case (null) {
+        return false;
+      };
+    };
   };
 
   // Check if Apify Bearer Token is set
