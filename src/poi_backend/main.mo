@@ -51,6 +51,7 @@ persistent actor {
     id : Nat;
     description : Text;
     challengeType : ChallengeType;
+    points : Nat; // Points awarded for completing this challenge
   };
 
   // Storage for cached user data
@@ -82,6 +83,14 @@ persistent actor {
 
   // Admin principal (set only once)
   private var admin : ?Principal = null;
+
+  // User points tracking: Principal -> { challengePoints, followerPoints, totalPoints, lastUpdated }
+  private var userPoints : Trie.Trie<Principal, {
+    challengePoints : Nat;
+    followerPoints : Nat;
+    totalPoints : Nat;
+    lastUpdated : Time.Time;
+  }> = Trie.empty();
 
   // Challenge status type for external use
   public type ChallengeStatus = {
@@ -267,7 +276,7 @@ persistent actor {
   // Challenge CRUD operations
 
   // Create a new challenge
-  public shared ({ caller }) func createChallenge(description : Text, challengeType : ChallengeType) : async Nat {
+  public shared ({ caller }) func createChallenge(description : Text, challengeType : ChallengeType, points : Nat) : async Nat {
     // Check if caller is admin
     if (not isCallerAdmin(caller)) {
       Debug.trap("Only admin can create challenges");
@@ -280,10 +289,11 @@ persistent actor {
       id = challengeId;
       description = description;
       challengeType = challengeType;
+      points = points;
     };
     challenges := Array.append(challenges, [newChallenge]);
 
-    Debug.print("Challenge created by admin: " # Nat.toText(challengeId) # " - " # description);
+    Debug.print("Challenge created by admin: " # Nat.toText(challengeId) # " - " # description # " (" # Nat.toText(points) # " points)");
 
     return challengeId;
   };
@@ -299,13 +309,13 @@ persistent actor {
   };
 
   // Update a challenge
-  public shared ({ caller }) func updateChallenge(id : Nat, description : Text, challengeType : ChallengeType) : async Bool {
+  public shared ({ caller }) func updateChallenge(id : Nat, description : Text, challengeType : ChallengeType, points : Nat) : async Bool {
     // Check if caller is admin
     if (not isCallerAdmin(caller)) {
       Debug.trap("Only admin can update challenges");
     };
 
-    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id) else {
+    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }); points = 0 }, challenges, func(a, b) = a.id == b.id) else {
       Debug.print("Challenge not found for update: " # Nat.toText(id));
       return false;
     };
@@ -314,6 +324,7 @@ persistent actor {
       id = id;
       description = description;
       challengeType = challengeType;
+      points = points;
     };
     challenges := Array.tabulate<Challenge>(
       challenges.size(),
@@ -332,7 +343,7 @@ persistent actor {
       Debug.trap("Only admin can delete challenges");
     };
 
-    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id) else {
+    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }); points = 0 }, challenges, func(a, b) = a.id == b.id) else {
       Debug.print("Challenge not found for deletion: " # Nat.toText(id));
       return false;
     };
@@ -439,6 +450,172 @@ persistent actor {
     };
   };
 
+  // Calculate follower points using the specified algorithm
+  private func calculateFollowerPoints(followers : Nat) : Nat {
+    var points : Nat = 0;
+    var score : Nat = followers;
+    while (score > 100) {
+      points += 10;
+      score := score / 10;
+    };
+    points += score / 10;
+    return points;
+  };
+
+  // Update user points after challenge completion
+  private func awardChallengePoints(caller : Principal, challengeId : Nat) : () {
+    // Find the challenge to get its points value
+    let ?index = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0 }, challenges, func(a, b) = a.id == b.id) else {
+      Debug.print("Challenge not found for points award: " # Nat.toText(challengeId));
+      return;
+    };
+
+    let challenge = challenges[index];
+    let challengePointsAwarded = challenge.points;
+
+    // Get current user points or initialize
+    let currentPoints = switch (Trie.find(userPoints, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
+      case (?points) { points };
+      case (null) {
+        {
+          challengePoints = 0;
+          followerPoints = 0;
+          totalPoints = 0;
+          lastUpdated = Time.now();
+        };
+      };
+    };
+
+    // Update challenge points
+    let newChallengePoints = currentPoints.challengePoints + challengePointsAwarded;
+
+    // Calculate follower points (need user data)
+    let followerPoints = switch (Trie.find(userDataStore, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
+      case (?cachedUser) {
+        if (isCacheValid(cachedUser)) {
+          switch (cachedUser.user.followers_count) {
+            case (?count) { calculateFollowerPoints(count) };
+            case (null) { 0 };
+          };
+        } else { 0 };
+      };
+      case (null) { 0 };
+    };
+
+    let newTotalPoints = newChallengePoints + followerPoints;
+
+    // Update user points
+    let updatedPoints = {
+      challengePoints = newChallengePoints;
+      followerPoints = followerPoints;
+      totalPoints = newTotalPoints;
+      lastUpdated = Time.now();
+    };
+
+    userPoints := Trie.replace(
+      userPoints,
+      { key = caller; hash = Principal.hash(caller) },
+      Principal.equal,
+      ?updatedPoints,
+    ).0;
+
+    Debug.print("Awarded " # Nat.toText(challengePointsAwarded) # " points to user for challenge " # Nat.toText(challengeId) # ". Total: " # Nat.toText(newTotalPoints));
+  };
+
+  // Get user points
+  public query ({ caller }) func getUserPoints() : async {
+    challengePoints : Nat;
+    followerPoints : Nat;
+    totalPoints : Nat;
+  } {
+    switch (Trie.find(userPoints, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
+      case (?points) {
+        {
+          challengePoints = points.challengePoints;
+          followerPoints = points.followerPoints;
+          totalPoints = points.totalPoints;
+        };
+      };
+      case (null) {
+        {
+          challengePoints = 0;
+          followerPoints = 0;
+          totalPoints = 0;
+        };
+      };
+    };
+  };
+
+  // Get leaderboard data
+  public query func getLeaderboard() : async [{
+    principal : Principal;
+    challengePoints : Nat;
+    followerPoints : Nat;
+    totalPoints : Nat;
+    username : ?Text;
+    name : ?Text;
+  }] {
+    // Convert Trie to array for sorting
+    var leaderboard : [{
+      principal : Principal;
+      challengePoints : Nat;
+      followerPoints : Nat;
+      totalPoints : Nat;
+      username : ?Text;
+      name : ?Text;
+    }] = [];
+
+    // Iterate through all user points
+    for ((principal, points) in Trie.iter(userPoints)) {
+      // Get user data for display
+      let userInfo = switch (Trie.find(userDataStore, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
+        case (?cachedUser) {
+          if (isCacheValid(cachedUser)) {
+            {
+              username = cachedUser.user.username;
+              name = cachedUser.user.name;
+            };
+          } else {
+            {
+              username = null;
+              name = null;
+            };
+          };
+        };
+        case (null) {
+          {
+            username = null;
+            name = null;
+          };
+        };
+      };
+
+      leaderboard := Array.append(leaderboard, [{
+        principal = principal;
+        challengePoints = points.challengePoints;
+        followerPoints = points.followerPoints;
+        totalPoints = points.totalPoints;
+        username = userInfo.username;
+        name = userInfo.name;
+      }]);
+    };
+
+    // Sort by total points descending
+    leaderboard := Array.sort<{
+      principal : Principal;
+      challengePoints : Nat;
+      followerPoints : Nat;
+      totalPoints : Nat;
+      username : ?Text;
+      name : ?Text;
+    }>(
+      leaderboard,
+      func(a, b) = Nat.compare(b.totalPoints, a.totalPoints)
+    );
+
+    return leaderboard;
+  };
+
   // Check if Apify Bearer Token is set
   public query func isApifyBearerTokenSet() : async Bool {
     Text.size(apifyBearerToken) > 0;
@@ -475,7 +652,7 @@ persistent actor {
     };
 
     // Find the challenge
-    let ?index = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id) else {
+    let ?index = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0 }, challenges, func(a, b) = a.id == b.id) else {
       return #error("Challenge not found");
     };
     let challenge = challenges[index];
@@ -514,6 +691,8 @@ persistent actor {
         if (isFollowing) {
           Debug.print("Challenge " # Nat.toText(challengeId) # " verified: User follows " # targetUser.user);
           setChallengeStatus(caller, challengeId, #verified);
+          // Award points for successful challenge completion
+          awardChallengePoints(caller, challengeId);
           return #success(true);
         } else {
           Debug.print("Challenge " # Nat.toText(challengeId) # " failed: User does not follow " # targetUser.user);

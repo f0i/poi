@@ -7,6 +7,7 @@ export interface Challenge {
   id: bigint;
   description: string;
   challengeType: ChallengeType;
+  points: bigint;
 }
 
 export class ChallengeService {
@@ -55,10 +56,11 @@ export class ChallengeService {
   async createChallenge(
     description: string,
     challengeType: ChallengeType,
+    points: bigint,
   ): Promise<bigint | null> {
     try {
       const actor = this.getActor();
-      const result = await actor.createChallenge(description, challengeType);
+      const result = await actor.createChallenge(description, challengeType, points);
       return result;
     } catch (error) {
       console.error("Failed to create challenge:", error);
@@ -70,6 +72,7 @@ export class ChallengeService {
     id: bigint,
     description: string,
     challengeType: ChallengeType,
+    points: bigint,
   ): Promise<boolean> {
     try {
       const actor = this.getActor();
@@ -77,6 +80,7 @@ export class ChallengeService {
         id,
         description,
         challengeType,
+        points,
       );
       return result;
     } catch (error) {
@@ -157,6 +161,43 @@ export class ChallengeService {
     } catch (error) {
       console.error("Failed to set Apify Cookies:", error);
       throw error;
+    }
+  }
+
+  async getUserPoints(): Promise<{
+    challengePoints: bigint;
+    followerPoints: bigint;
+    totalPoints: bigint;
+  }> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.getUserPoints();
+      return result;
+    } catch (error) {
+      console.error("Failed to get user points:", error);
+      return {
+        challengePoints: 0n,
+        followerPoints: 0n,
+        totalPoints: 0n,
+      };
+    }
+  }
+
+  async getLeaderboard(): Promise<Array<{
+    principal: any;
+    challengePoints: bigint;
+    followerPoints: bigint;
+    totalPoints: bigint;
+    username: string | null;
+    name: string | null;
+  }>> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.getLeaderboard();
+      return result;
+    } catch (error) {
+      console.error("Failed to get leaderboard:", error);
+      return [];
     }
   }
 }
