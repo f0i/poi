@@ -246,30 +246,30 @@ function Leaderboard() {
                        {/* User Info */}
                        <div className="flex-1">
                          <div className="flex items-center space-x-3">
-                           {user.avatar_url && user.avatar_url.length > 0 ? (
-                             <img
-                               src={user.avatar_url[0]}
-                               alt={`${user.name && user.name.length > 0 ? user.name[0] : 'User'} avatar`}
-                               className="w-10 h-10 rounded-full object-cover border-2 border-slate-600"
-                               onError={(e) => {
-                                 // Fallback to default icon if image fails to load
-                                 e.target.style.display = 'none';
-                                 e.target.nextSibling.style.display = 'flex';
-                               }}
-                             />
-                           ) : null}
-                           <div className={`w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center ${user.avatar_url && user.avatar_url.length > 0 ? 'hidden' : ''}`}>
+                            {user.avatar_url ? (
+                              <img
+                                src={user.avatar_url}
+                                alt={`${user.name ? user.name : 'User'} avatar`}
+                                className="w-10 h-10 rounded-full object-cover border-2 border-slate-600"
+                                onError={(e) => {
+                                  // Fallback to default icon if image fails to load
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center ${user.avatar_url ? 'hidden' : ''}`}>
                              <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                              </svg>
                            </div>
                            <div>
-                             <p className="text-white font-medium">
-                               {user.name && user.name.length > 0 ? user.name[0] : 'Anonymous User'}
-                             </p>
-                             {user.username && user.username.length > 0 && (
-                               <p className="text-slate-400 text-sm">@{user.username[0]}</p>
-                             )}
+                              <p className="text-white font-medium">
+                                {user.name ? user.name : 'Anonymous User'}
+                              </p>
+                              {user.username && (
+                                <p className="text-slate-400 text-sm">@{user.username}</p>
+                              )}
                            </div>
                          </div>
                        </div>
