@@ -31,3 +31,10 @@
 - **CSS Framework**: Tailwind CSS v4 with dark theme
 - **Build Process**: Integrated with dfx build system
 - **PostCSS**: Configured for Tailwind CSS v4
+
+## Git Workflow
+- **Commit locally**: Always commit changes locally with descriptive messages
+- **Do not push**: Do not attempt to push to remote repositories (user has SSH access)
+- **User handles pushes**: User will push commits to GitHub using their SSH credentials
+- **Keep commits atomic**: Each commit should represent a single logical change
+- **Descriptive messages**: Use clear, concise commit messages explaining what was changed
