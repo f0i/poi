@@ -747,7 +747,7 @@ persistent actor {
     };
   };
 
-  // Get leaderboard data
+  // Get leaderboard data (uses same calculation as getUserPoints for consistency)
   public query func getLeaderboard() : async [{
     principal : Principal;
     challengePoints : Nat;
@@ -766,8 +766,26 @@ persistent actor {
       name : ?Text;
     }] = [];
 
-    // Iterate through all user points
-    for ((principal, points) in Trie.iter(userPoints)) {
+    // Iterate through all users with stored points
+    for ((principal, _) in Trie.iter(userPoints)) {
+      // Calculate points dynamically (same as getUserPoints)
+      let calculatedPoints = calculateUserPoints(principal);
+
+      // Update stored points with calculated values for consistency
+      let updatedPoints = {
+        challengePoints = calculatedPoints.challengePoints;
+        followerPoints = calculatedPoints.followerPoints;
+        totalPoints = calculatedPoints.totalPoints;
+        lastUpdated = Time.now();
+      };
+
+      userPoints := Trie.replace(
+        userPoints,
+        { key = principal; hash = Principal.hash(principal) },
+        Principal.equal,
+        ?updatedPoints,
+      ).0;
+
       // Get user data for display
       let userInfo = switch (Trie.find(userDataStore, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
         case (?cachedUser) {
@@ -791,11 +809,25 @@ persistent actor {
         };
       };
 
-      leaderboard := Array.append(leaderboard, [{ principal = principal; challengePoints = points.challengePoints; followerPoints = points.followerPoints; totalPoints = points.totalPoints; username = userInfo.username; name = userInfo.name }]);
+      leaderboard := Array.append(leaderboard, [{
+        principal = principal;
+        challengePoints = calculatedPoints.challengePoints;
+        followerPoints = calculatedPoints.followerPoints;
+        totalPoints = calculatedPoints.totalPoints;
+        username = userInfo.username;
+        name = userInfo.name
+      }]);
     };
 
     // Sort by total points descending
-    leaderboard := Array.sort<{ principal : Principal; challengePoints : Nat; followerPoints : Nat; totalPoints : Nat; username : ?Text; name : ?Text }>(
+    leaderboard := Array.sort<{
+      principal : Principal;
+      challengePoints : Nat;
+      followerPoints : Nat;
+      totalPoints : Nat;
+      username : ?Text;
+      name : ?Text
+    }>(
       leaderboard,
       func(a, b) = Nat.compare(b.totalPoints, a.totalPoints),
     );

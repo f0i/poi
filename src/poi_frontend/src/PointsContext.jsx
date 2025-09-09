@@ -32,36 +32,26 @@ export const PointsProvider = ({ children }) => {
 
     setIsRefreshing(true);
     try {
-      // Try to get fresh data from external API
+      // Get user points directly (no external API refresh to avoid inter-canister calls)
       const challengeService = new ChallengeService();
-      const freshPoints = await challengeService.refreshUserPoints('twitter');
-      setPoints(freshPoints);
+      const userPoints = await challengeService.getUserPoints();
+      setPoints(userPoints);
       setLastUpdate(Date.now());
-      return freshPoints;
+      return userPoints;
     } catch (error) {
-      console.error('Failed to refresh user points:', error);
+      console.error('Failed to load user points:', error);
 
-      // Fallback 1: Use existing cached points if available
+      // Fallback: Use existing cached points if available
       if (points) {
         return points;
       }
 
-      // Fallback 2: Try to get basic cached data
-      try {
-        const challengeService = new ChallengeService();
-        const cachedPoints = await challengeService.getUserPoints();
-        setPoints(cachedPoints);
-        setLastUpdate(Date.now());
-        return cachedPoints;
-      } catch (fallbackError) {
-        console.error('Failed to load cached user points:', fallbackError);
-        // Return empty points as last resort
-        return {
-          challengePoints: 0n,
-          followerPoints: 0n,
-          totalPoints: 0n,
-        };
-      }
+      // Return empty points as last resort
+      return {
+        challengePoints: 0n,
+        followerPoints: 0n,
+        totalPoints: 0n,
+      };
     } finally {
       setIsRefreshing(false);
     }
