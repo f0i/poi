@@ -8,11 +8,6 @@ function Layout({ sidebar, main }) {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
         <header className="text-center mb-8">
-          <img
-            src="/logo2.svg"
-            alt="DFINITY logo"
-            className="mx-auto mb-6 w-16 h-16"
-          />
           <h1 className="text-3xl font-bold text-white mb-2">
             Proof of Influence
           </h1>
@@ -72,6 +67,20 @@ function Layout({ sidebar, main }) {
             {main}
           </div>
         </div>
+
+        {/* Footer */}
+        <footer className="mt-12 pt-8 border-t border-slate-700">
+          <div className="text-center">
+            <img
+              src="/logo2.svg"
+              alt="DFINITY logo"
+              className="mx-auto mb-4 w-12 h-12 opacity-60"
+            />
+            <p className="text-slate-500 text-sm">
+              Powered by Internet Computer
+            </p>
+          </div>
+        </footer>
       </div>
     </div>
   );
