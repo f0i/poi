@@ -201,23 +201,28 @@ persistent actor {
     Debug.print("Fetching user data from external canister for principal: " # Principal.toText(principal));
     try {
       let userDataActor = await* getUserDataActor();
-      let userOpt = await userDataActor.getUser(principal, origin);
-      switch (userOpt) {
-        case (?user) {
-          // Store in cache
-          let cachedUser : CachedUser = {
-            user = user;
-            timestamp = Time.now();
-            ttl = CACHE_TTL;
-          };
-          userDataStore := Trie.replace(
-            userDataStore,
-            { key = principal; hash = Principal.hash(principal) },
-            Principal.equal,
-            ?cachedUser,
-          ).0;
-          Debug.print("Stored user data in cache for principal: " # Principal.toText(principal));
-          return ?user;
+       let userOpt = await userDataActor.getUser(principal, origin);
+       switch (userOpt) {
+         case (?user) {
+           // Debug log user data fields
+           Debug.print("User data received - username: " # (switch (user.username) { case (?u) u; case (null) "null" }));
+           Debug.print("User data received - followers_count: " # (switch (user.followers_count) { case (?fc) Nat.toText(fc); case (null) "null" }));
+           Debug.print("User data received - following_count: " # (switch (user.following_count) { case (?fc) Nat.toText(fc); case (null) "null" }));
+
+           // Store in cache
+           let cachedUser : CachedUser = {
+             user = user;
+             timestamp = Time.now();
+             ttl = CACHE_TTL;
+           };
+           userDataStore := Trie.replace(
+             userDataStore,
+             { key = principal; hash = Principal.hash(principal) },
+             Principal.equal,
+             ?cachedUser,
+           ).0;
+           Debug.print("Stored user data in cache for principal: " # Principal.toText(principal));
+           return ?user;
         };
         case (null) {
           Debug.print("No user data found for principal: " # Principal.toText(principal));
@@ -256,6 +261,82 @@ persistent actor {
   public shared ({ caller }) func refreshUserData(origin : Text) : async ?User {
     Debug.print("Refreshing user data for principal: " # Principal.toText(caller));
     return await fetchUserData(caller, origin);
+  };
+
+  // Force refresh user data and recalculate points
+  public shared ({ caller }) func refreshUserPoints(origin : Text) : async {
+    challengePoints : Nat;
+    followerPoints : Nat;
+    totalPoints : Nat;
+  } {
+    Debug.print("Refreshing user points for principal: " # Principal.toText(caller));
+
+    // Force refresh user data
+    let _userData = await fetchUserData(caller, origin);
+
+    // Recalculate points
+    let currentPoints = switch (Trie.find(userPoints, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
+      case (?points) { points };
+      case (null) {
+        {
+          challengePoints = 0;
+          followerPoints = 0;
+          totalPoints = 0;
+          lastUpdated = Time.now();
+        };
+      };
+    };
+
+    // Recalculate follower points with fresh data
+    let followerPoints = switch (Trie.find(userDataStore, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
+      case (?cachedUser) {
+        if (isCacheValid(cachedUser)) {
+          Debug.print("Recalculating follower points with fresh data");
+          switch (cachedUser.user.followers_count) {
+            case (?count) {
+              Debug.print("Fresh follower count found: " # Nat.toText(count));
+              calculateFollowerPoints(count)
+            };
+            case (null) {
+              Debug.print("No fresh follower count available");
+              0
+            };
+          };
+        } else {
+          Debug.print("Fresh cached data is invalid");
+          0
+        };
+      };
+      case (null) {
+        Debug.print("No fresh cached user data found");
+        0
+      };
+    };
+
+    let newTotalPoints = currentPoints.challengePoints + followerPoints;
+
+    // Update user points
+    let updatedPoints = {
+      challengePoints = currentPoints.challengePoints;
+      followerPoints = followerPoints;
+      totalPoints = newTotalPoints;
+      lastUpdated = Time.now();
+    };
+
+    userPoints := Trie.replace(
+      userPoints,
+      { key = caller; hash = Principal.hash(caller) },
+      Principal.equal,
+      ?updatedPoints,
+    ).0;
+
+    Debug.print("Refreshed user points - Challenge: " # Nat.toText(currentPoints.challengePoints) # ", Follower: " # Nat.toText(followerPoints) # ", Total: " # Nat.toText(newTotalPoints));
+
+    return {
+      challengePoints = currentPoints.challengePoints;
+      followerPoints = followerPoints;
+      totalPoints = newTotalPoints;
+    };
   };
 
   // Get cached user data without fetching (query call)
@@ -493,13 +574,26 @@ persistent actor {
     let followerPoints = switch (Trie.find(userDataStore, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
       case (?cachedUser) {
         if (isCacheValid(cachedUser)) {
+          Debug.print("Found cached user data for follower calculation");
           switch (cachedUser.user.followers_count) {
-            case (?count) { calculateFollowerPoints(count) };
-            case (null) { 0 };
+            case (?count) {
+              Debug.print("Follower count found: " # Nat.toText(count));
+              calculateFollowerPoints(count)
+            };
+            case (null) {
+              Debug.print("No follower count in user data");
+              0
+            };
           };
-        } else { 0 };
+        } else {
+          Debug.print("Cached user data is stale, cannot calculate follower points");
+          0
+        };
       };
-      case (null) { 0 };
+      case (null) {
+        Debug.print("No cached user data found for follower calculation");
+        0
+      };
     };
 
     let newTotalPoints = newChallengePoints + followerPoints;

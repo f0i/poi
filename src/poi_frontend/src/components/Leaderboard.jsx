@@ -8,6 +8,7 @@ function Leaderboard() {
   const [userPoints, setUserPoints] = useState(null);
   const [loading, setLoading] = useState(false);
   const [userRank, setUserRank] = useState(null);
+  const [refreshingPoints, setRefreshingPoints] = useState(false);
 
   const challengeService = new ChallengeService(identity);
 
@@ -43,6 +44,21 @@ function Leaderboard() {
       setUserPoints(points);
     } catch (error) {
       console.error('Failed to load user points:', error);
+    }
+  };
+
+  const refreshUserPoints = async () => {
+    setRefreshingPoints(true);
+    try {
+      // Use 'twitter' as the origin for refreshing user data
+      const points = await challengeService.refreshUserPoints('twitter');
+      setUserPoints(points);
+      // Refresh leaderboard to get updated rankings
+      await loadLeaderboard();
+    } catch (error) {
+      console.error('Failed to refresh user points:', error);
+    } finally {
+      setRefreshingPoints(false);
     }
   };
 
@@ -136,6 +152,29 @@ function Leaderboard() {
               </div>
               <p className="text-slate-400 text-sm">Follower Points</p>
             </div>
+          </div>
+
+          {/* Refresh Points Button */}
+          <div className="mt-4 text-center">
+            <button
+              onClick={refreshUserPoints}
+              disabled={refreshingPoints}
+              className="btn-secondary text-sm"
+            >
+              {refreshingPoints ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Refresh Points
+                </>
+              )}
+            </button>
+            <p className="text-slate-400 text-xs mt-2">
+              Click to refresh your follower data and recalculate points
+            </p>
           </div>
         </div>
       )}
