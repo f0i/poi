@@ -181,18 +181,18 @@ function ChallengeList() {
 
             <div>
               <label className="label">
-                User ID to Follow
+                User Handle / Username
               </label>
               <input
                 type="text"
                 value={newChallenge.userToFollow}
                 onChange={(e) => setNewChallenge({...newChallenge, userToFollow: e.target.value})}
                 className="input-field w-full"
-                placeholder="e.g., 2244994945"
+                placeholder="e.g. roadblock_icp"
                 required
               />
               <p className="text-slate-400 text-sm mt-1">
-                Enter the numeric user ID of the person to follow (not username)
+                Enter the Twitter/X username of the person to follow
               </p>
             </div>
 
@@ -266,145 +266,149 @@ function ChallengeList() {
 
                <div className="space-y-3">
                  {challenges.map((challenge) => (
-                   <div
-                     key={challenge.id.toString()}
-                     className="bg-slate-700 rounded-lg p-4 border border-slate-600 hover:border-slate-500 transition-colors duration-200"
-                   >
-                     <div className="flex items-start justify-between">
-                       <div className="flex-1">
-                         <h4 className="text-lg font-semibold text-white mb-2">
-                           {challenge.description}
-                         </h4>
+                    <div
+                      key={challenge.id.toString()}
+                      className="bg-slate-700/50 rounded-xl p-6 border border-slate-600 hover:border-slate-500 hover:bg-slate-700/70 transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h4 className="text-xl font-semibold text-white mb-3 leading-tight">
+                            {challenge.description}
+                          </h4>
 
-                         <div className="flex items-center space-x-2 mb-3">
-                           <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                           </svg>
-                           <span className="text-slate-300">Follow user ID:</span>
-                           <code className="bg-slate-600 px-2 py-1 rounded text-blue-400 font-mono text-sm">
-                             {challenge.challengeType.follows.user}
-                           </code>
-                         </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">Follow User</p>
+                                <p className="text-white font-medium">@{challenge.challengeType.follows.user}</p>
+                              </div>
+                            </div>
 
-                         <div className="flex items-center space-x-2 mb-3">
-                           <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                           </svg>
-                           <span className="text-slate-300">Points:</span>
-                           <span className="text-yellow-400 font-bold text-lg">
-                             {challenge.points.toString()}
-                           </span>
-                         </div>
+                            <div className="flex items-center space-x-3">
+                              <div className="w-8 h-8 bg-yellow-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <svg className="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">Reward Points</p>
+                                <p className="text-yellow-400 font-bold text-lg">{challenge.points.toString()}</p>
+                              </div>
+                            </div>
+                          </div>
 
-                         <div className="flex items-center space-x-4 text-sm text-slate-400">
-                           <span className="flex items-center">
-                             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                             </svg>
-                             ID: {challenge.id.toString()}
-                           </span>
+                          {/* Status Badge */}
+                          {challengeStatuses[challenge.id] && (
+                            <div className="flex items-center justify-start">
+                              {challengeStatuses[challenge.id].verified !== undefined ? (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  Verified
+                                </span>
+                              ) : challengeStatuses[challenge.id].pending !== undefined ? (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                                  <svg className="w-4 h-4 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                  </svg>
+                                  Pending Verification
+                                </span>
+                              ) : challengeStatuses[challenge.id].failed ? (
+                                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-500/20 text-red-400 border border-red-500/30">
+                                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                  Failed
+                                </span>
+                              ) : null}
+                            </div>
+                          )}
+                        </div>
 
-                           {/* Status Badge */}
-                           {challengeStatuses[challenge.id] && (
-                             <div className="flex items-center">
-                               {challengeStatuses[challenge.id].verified !== undefined ? (
-                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                   <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                   </svg>
-                                   Verified
-                                 </span>
-                               ) : challengeStatuses[challenge.id].pending !== undefined ? (
-                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                                   <svg className="w-3 h-3 mr-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                   </svg>
-                                   Pending
-                                 </span>
-                               ) : challengeStatuses[challenge.id].failed ? (
-                                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                                   <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                   </svg>
-                                   Failed
-                                 </span>
-                               ) : null}
-                             </div>
-                           )}
-                         </div>
-                       </div>
+                        {/* Admin Actions */}
+                        {isAdmin && (
+                          <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-600">
+                            <button
+                              onClick={() => handleVerifyChallenge(challenge.id)}
+                              disabled={verifyingChallenge === challenge.id}
+                              className="btn-primary text-sm px-4 py-2 flex items-center justify-center"
+                              title="Verify challenge"
+                            >
+                              {verifyingChallenge === challenge.id ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              ) : (
+                                <>
+                                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  Verify Challenge
+                                </>
+                              )}
+                            </button>
 
-                       {/* Admin Actions */}
-                       {isAdmin && (
-                         <div className="flex space-x-2 mt-3">
-                           <button
-                             onClick={() => handleVerifyChallenge(challenge.id)}
-                             disabled={verifyingChallenge === challenge.id}
-                             className="btn-primary text-sm px-3 py-1"
-                             title="Verify challenge"
-                           >
-                             {verifyingChallenge === challenge.id ? (
-                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                             ) : (
-                               <>
-                                 <svg className="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                 </svg>
-                                 Verify
-                               </>
-                             )}
-                           </button>
+                            <button
+                              onClick={() => handleDeleteChallenge(challenge.id)}
+                              className="btn-danger text-sm px-4 py-2 flex items-center justify-center"
+                              title="Delete challenge"
+                            >
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Delete Challenge
+                            </button>
+                          </div>
+                        )}
 
-                           <button
-                             onClick={() => handleDeleteChallenge(challenge.id)}
-                             className="btn-danger text-sm px-3 py-1"
-                             title="Delete challenge"
-                           >
-                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                             </svg>
-                           </button>
-                         </div>
-                       )}
-
-                       {/* Verification Result */}
-                       {verificationResults[challenge.id] && (
-                         <div className="mt-3 p-3 rounded-lg border">
-                           {verificationResults[challenge.id].success !== undefined ? (
-                             verificationResults[challenge.id].success ? (
-                               <div className="flex items-center text-green-400">
-                                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                 </svg>
-                                 <span className="font-medium">Challenge Verified!</span>
-                                 <span className="ml-2 text-sm text-slate-400">
-                                   You are following user ID {challenge.challengeType.follows.user}
-                                 </span>
-                               </div>
-                             ) : (
-                               <div className="flex items-center text-yellow-400">
-                                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                                 </svg>
-                                 <span className="font-medium">Not Verified</span>
-                                 <span className="ml-2 text-sm text-slate-400">
-                                   You are not following user ID {challenge.challengeType.follows.user}
-                                 </span>
-                               </div>
-                             )
-                           ) : (
-                             <div className="flex items-center text-red-400">
-                               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                               </svg>
-                               <span className="font-medium">Verification Failed</span>
-                               <span className="ml-2 text-sm text-slate-400">
-                                 {verificationResults[challenge.id].error}
-                               </span>
-                             </div>
-                           )}
-                         </div>
-                       )}
+                        {/* Verification Result */}
+                        {verificationResults[challenge.id] && (
+                          <div className="mt-3 p-3 rounded-lg border border-slate-600 bg-slate-700/50">
+                            {verificationResults[challenge.id].success !== undefined ? (
+                              verificationResults[challenge.id].success ? (
+                                <div className="flex items-start text-green-400">
+                                  <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <div className="min-w-0 flex-1">
+                                    <span className="font-medium block">Challenge Verified!</span>
+                                    <span className="text-sm text-slate-400">
+                                      You are following @{challenge.challengeType.follows.user}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-start text-yellow-400">
+                                  <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                  </svg>
+                                  <div className="min-w-0 flex-1">
+                                    <span className="font-medium block">Not Verified</span>
+                                    <span className="text-sm text-slate-400">
+                                      You are not following @{challenge.challengeType.follows.user}
+                                    </span>
+                                  </div>
+                                </div>
+                              )
+                            ) : (
+                              <div className="flex items-start text-red-400">
+                                <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                <div className="min-w-0 flex-1">
+                                  <span className="font-medium block">Verification Failed</span>
+                                  <span className="text-sm text-slate-400 break-words">
+                                    {verificationResults[challenge.id].error}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                      </div>
                    </div>
                  ))}

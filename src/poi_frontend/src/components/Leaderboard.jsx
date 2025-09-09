@@ -8,14 +8,13 @@ function Leaderboard() {
   const [userPoints, setUserPoints] = useState(null);
   const [loading, setLoading] = useState(false);
   const [userRank, setUserRank] = useState(null);
-  const [refreshingPoints, setRefreshingPoints] = useState(false);
 
   const challengeService = new ChallengeService(identity);
 
   useEffect(() => {
     if (isAuthenticated) {
       loadLeaderboard();
-      loadUserPoints();
+      loadFreshUserPoints();
     }
   }, [isAuthenticated]);
 
@@ -38,29 +37,24 @@ function Leaderboard() {
     }
   };
 
-  const loadUserPoints = async () => {
+  const loadFreshUserPoints = async () => {
     try {
-      const points = await challengeService.getUserPoints();
+      // Use refresh to get fresh data from external canister instead of cached data
+      const points = await challengeService.refreshUserPoints('twitter');
       setUserPoints(points);
     } catch (error) {
-      console.error('Failed to load user points:', error);
+      console.error('Failed to load fresh user points:', error);
+      // Fallback to cached data if refresh fails
+      try {
+        const cachedPoints = await challengeService.getUserPoints();
+        setUserPoints(cachedPoints);
+      } catch (fallbackError) {
+        console.error('Failed to load cached user points:', fallbackError);
+      }
     }
   };
 
-  const refreshUserPoints = async () => {
-    setRefreshingPoints(true);
-    try {
-      // Use 'twitter' as the origin for refreshing user data
-      const points = await challengeService.refreshUserPoints('twitter');
-      setUserPoints(points);
-      // Refresh leaderboard to get updated rankings
-      await loadLeaderboard();
-    } catch (error) {
-      console.error('Failed to refresh user points:', error);
-    } finally {
-      setRefreshingPoints(false);
-    }
-  };
+
 
   const formatNumber = (num) => {
     return new Intl.NumberFormat().format(Number(num));
@@ -154,28 +148,7 @@ function Leaderboard() {
             </div>
           </div>
 
-          {/* Refresh Points Button */}
-          <div className="mt-4 text-center">
-            <button
-              onClick={refreshUserPoints}
-              disabled={refreshingPoints}
-              className="btn-secondary text-sm"
-            >
-              {refreshingPoints ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : (
-                <>
-                  <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Refresh Points
-                </>
-              )}
-            </button>
-            <p className="text-slate-400 text-xs mt-2">
-              Click to refresh your follower data and recalculate points
-            </p>
-          </div>
+
         </div>
       )}
 
@@ -252,24 +225,36 @@ function Leaderboard() {
                         )}
                       </div>
 
-                      {/* User Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center">
-                            <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-white font-medium">
-                              {user.name && user.name.length > 0 ? user.name[0] : 'Anonymous User'}
-                            </p>
-                            {user.username && user.username.length > 0 && (
-                              <p className="text-slate-400 text-sm">@{user.username[0]}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                       {/* User Info */}
+                       <div className="flex-1">
+                         <div className="flex items-center space-x-3">
+                           {user.avatar_url && user.avatar_url.length > 0 ? (
+                             <img
+                               src={user.avatar_url[0]}
+                               alt={`${user.name && user.name.length > 0 ? user.name[0] : 'User'} avatar`}
+                               className="w-10 h-10 rounded-full object-cover border-2 border-slate-600"
+                               onError={(e) => {
+                                 // Fallback to default icon if image fails to load
+                                 e.target.style.display = 'none';
+                                 e.target.nextSibling.style.display = 'flex';
+                               }}
+                             />
+                           ) : null}
+                           <div className={`w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center ${user.avatar_url && user.avatar_url.length > 0 ? 'hidden' : ''}`}>
+                             <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                             </svg>
+                           </div>
+                           <div>
+                             <p className="text-white font-medium">
+                               {user.name && user.name.length > 0 ? user.name[0] : 'Anonymous User'}
+                             </p>
+                             {user.username && user.username.length > 0 && (
+                               <p className="text-slate-400 text-sm">@{user.username[0]}</p>
+                             )}
+                           </div>
+                         </div>
+                       </div>
                     </div>
 
                     {/* Points */}
