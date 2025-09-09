@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
 import { usePoints } from '../PointsContext';
 import { ChallengeService } from '../services/challengeService';
-import { useState, useEffect } from 'react';
 
 function Leaderboard() {
   const { isAuthenticated, identity } = useAuth();

@@ -3,6 +3,7 @@ import Text "mo:base/Text";
 import Time "mo:base/Time";
 import Trie "mo:base/Trie";
 import Nat "mo:base/Nat";
+import Int "mo:base/Int";
 import Array "mo:base/Array";
 import Debug "mo:base/Debug";
 import Hash "mo:base/Hash";
@@ -69,6 +70,11 @@ persistent actor {
   // Cache TTL in seconds (24 hours)
   private let CACHE_TTL : Nat = 86400;
 
+  // Rate limiting constants
+  private let BASE_VERIFICATION_COOLDOWN : Nat = 300_000_000_000; // 5 minutes base cooldown in nanoseconds
+  private let MAX_CONSECUTIVE_FAILURES : Nat = 5; // Max consecutive failures before severe lockout
+  private let PERMANENT_BLOCK_THRESHOLD : Nat = 5; // Permanent block after this many consecutive failures
+
   // Apify API Bearer Token (write-only, no getter)
   private var apifyBearerToken : Text = "";
 
@@ -77,6 +83,22 @@ persistent actor {
 
   // Challenge status storage: Principal -> ChallengeId -> Status
   private var challengeStatuses : Trie.Trie<Principal, Trie.Trie<Nat, { #pending; #verified; #failed : Text }>> = Trie.empty();
+
+  // Rate limiting storage
+  // Verification attempts: Principal -> ChallengeId -> { attempts: Nat, lastAttempt: Time.Time }
+  private var verificationAttempts : Trie.Trie<Principal, Trie.Trie<Nat, { attempts : Nat; lastAttempt : Time.Time }>> = Trie.empty();
+
+  // Consecutive failed attempts: Principal -> { count: Nat, lastFailure: Time.Time }
+  private var consecutiveFailures : Trie.Trie<Principal, { count : Nat; lastFailure : Time.Time }> = Trie.empty();
+
+  // Ongoing verifications: Principal -> ChallengeId (to prevent concurrent verifications)
+  private var ongoingVerifications : Trie.Trie<Principal, Nat> = Trie.empty();
+
+  // Failed verification lockouts: Principal -> { lockedUntil: Time.Time, reason: Text, failureCount: Nat }
+  private var verificationLockouts : Trie.Trie<Principal, { lockedUntil : Time.Time; reason : Text; failureCount : Nat }> = Trie.empty();
+
+  // Permanent blocks: Principal -> { blockedAt: Time.Time, reason: Text, totalFailures: Nat }
+  private var permanentBlocks : Trie.Trie<Principal, { blockedAt : Time.Time; reason : Text; totalFailures : Nat }> = Trie.empty();
 
   // Followers storage: TargetUserId -> Array of FollowerIds
   private var followersCache : [(Text, [Text])] = [];
@@ -737,9 +759,102 @@ persistent actor {
     #success : Bool;
     #error : Text;
   } {
+    // Rate limiting checks
+    let now = Time.now();
+
+    // 0. Check if user is permanently blocked
+    switch (Trie.find(permanentBlocks, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
+      case (?block) {
+        return #error("Your account has been permanently blocked due to excessive failed verification attempts (" # Nat.toText(block.totalFailures) # " total failures). Contact an administrator to appeal this block.");
+      };
+      case (null) { /* Not permanently blocked */ };
+    };
+
+    // 1. Check if user is currently locked out
+    switch (Trie.find(verificationLockouts, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
+      case (?lockout) {
+        if (now < lockout.lockedUntil) {
+          let remainingNanos = lockout.lockedUntil - now;
+          let remainingSeconds : Nat = if (remainingNanos > 0) {
+            let seconds = remainingNanos / 1_000_000_000;
+            if (seconds < 0) { 0 } else { Int.abs(seconds) }
+          } else { 0 };
+          return #error("Verification temporarily locked due to " # Nat.toText(lockout.failureCount) # " consecutive failures. Try again in " # Nat.toText(remainingSeconds) # " seconds.");
+        } else {
+          // Lockout expired, remove it
+          verificationLockouts := Trie.replace(
+            verificationLockouts,
+            { key = caller; hash = Principal.hash(caller) },
+            Principal.equal,
+            null,
+          ).0;
+        };
+      };
+      case (null) { /* No lockout */ };
+    };
+
+    // 2. Check if user is already verifying another challenge
+    switch (Trie.find(ongoingVerifications, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
+      case (?ongoingChallengeId) {
+        if (ongoingChallengeId != challengeId) {
+          return #error("You are currently verifying another challenge. Please wait for it to complete.");
+        };
+      };
+      case (null) { /* No ongoing verification */ };
+    };
+
+    // 3. Check consecutive failures for escalating delay
+    let consecutiveFailuresOpt = Trie.find(consecutiveFailures, { key = caller; hash = Principal.hash(caller) }, Principal.equal);
+    let currentFailureCount = switch (consecutiveFailuresOpt) {
+      case (?failures) {
+        // Check if failures are recent (within last hour)
+        let timeSinceLastFailure = now - failures.lastFailure;
+        if (timeSinceLastFailure < 3_600_000_000_000) { // 1 hour in nanoseconds
+          failures.count
+        } else {
+          0 // Reset if more than an hour has passed
+        };
+      };
+      case (null) { 0 };
+    };
+
+    // Apply escalating delay: 5 minutes * failure count
+    if (currentFailureCount > 0) {
+      let delayDuration = BASE_VERIFICATION_COOLDOWN * currentFailureCount;
+      let lastFailureTime = switch (consecutiveFailuresOpt) {
+        case (?failures) { failures.lastFailure };
+        case (null) { now };
+      };
+      let timeSinceLastFailure = now - lastFailureTime;
+
+      if (timeSinceLastFailure < delayDuration) {
+        let remainingNanos = delayDuration - timeSinceLastFailure;
+        let remainingSeconds : Nat = if (remainingNanos > 0) {
+          let seconds = remainingNanos / 1_000_000_000;
+          if (seconds < 0) { 0 } else { Int.abs(seconds) }
+        } else { 0 };
+        return #error("Verification delayed due to " # Nat.toText(currentFailureCount) # " recent failures. Try again in " # Nat.toText(remainingSeconds) # " seconds.");
+      };
+    };
+
+    // 4. Set ongoing verification
+    ongoingVerifications := Trie.replace(
+      ongoingVerifications,
+      { key = caller; hash = Principal.hash(caller) },
+      Principal.equal,
+      ?challengeId,
+    ).0;
+
     // Check if challenge is already verified
     switch (await getChallengeStatus(challengeId)) {
       case (?#verified) {
+        // Remove ongoing verification
+        ongoingVerifications := Trie.replace(
+          ongoingVerifications,
+          { key = caller; hash = Principal.hash(caller) },
+          Principal.equal,
+          null,
+        ).0;
         return #error("Challenge already verified");
       };
       case (_) { /* Continue with verification */ };
@@ -759,11 +874,27 @@ persistent actor {
 
     // Get user's Twitter data
     let ?cachedUser = Trie.find(userDataStore, { key = caller; hash = Principal.hash(caller) }, Principal.equal) else {
+      // Update attempt counters and remove ongoing verification
+      updateVerificationAttempts(caller, challengeId, false);
+      ongoingVerifications := Trie.replace(
+        ongoingVerifications,
+        { key = caller; hash = Principal.hash(caller) },
+        Principal.equal,
+        null,
+      ).0;
       setChallengeStatus(caller, challengeId, #failed("No user data found, please sign in with Twitter/X"));
       return #error("No user data found, please sign in with Twitter/X");
     };
 
     if (not isCacheValid(cachedUser)) {
+      // Update attempt counters and remove ongoing verification
+      updateVerificationAttempts(caller, challengeId, false);
+      ongoingVerifications := Trie.replace(
+        ongoingVerifications,
+        { key = caller; hash = Principal.hash(caller) },
+        Principal.equal,
+        null,
+      ).0;
       setChallengeStatus(caller, challengeId, #failed("User data is stale, please refresh your profile"));
       return #error("User data is stale, please refresh your profile");
     };
@@ -772,6 +903,14 @@ persistent actor {
     switch (cachedUser.user.provider) {
       case (#x) { /* continue */ };
       case (_) {
+        // Update attempt counters and remove ongoing verification
+        updateVerificationAttempts(caller, challengeId, false);
+        ongoingVerifications := Trie.replace(
+          ongoingVerifications,
+          { key = caller; hash = Principal.hash(caller) },
+          Principal.equal,
+          null,
+        ).0;
         setChallengeStatus(caller, challengeId, #failed("User does not have a Twitter/X account linked"));
         return #error("User does not have a Twitter/X account linked");
       };
@@ -785,17 +924,44 @@ persistent actor {
         if (isFollowing) {
           Debug.print("Challenge " # Nat.toText(challengeId) # " verified: User follows " # targetUser.user);
           setChallengeStatus(caller, challengeId, #verified);
+          // Reset attempt counters on success
+          resetVerificationAttempts(caller, challengeId);
+          // Remove ongoing verification
+          ongoingVerifications := Trie.replace(
+            ongoingVerifications,
+            { key = caller; hash = Principal.hash(caller) },
+            Principal.equal,
+            null,
+          ).0;
           // Award points for successful challenge completion
           awardChallengePoints(caller, challengeId);
           return #success(true);
         } else {
           Debug.print("Challenge " # Nat.toText(challengeId) # " failed: User does not follow " # targetUser.user);
+          // Update attempt counters
+          updateVerificationAttempts(caller, challengeId, false);
+          // Remove ongoing verification
+          ongoingVerifications := Trie.replace(
+            ongoingVerifications,
+            { key = caller; hash = Principal.hash(caller) },
+            Principal.equal,
+            null,
+          ).0;
           setChallengeStatus(caller, challengeId, #failed("Not following the required user"));
           return #success(false);
         };
       };
       case (#error(err)) {
         Debug.print("Challenge " # Nat.toText(challengeId) # " verification error: " # err);
+        // Update attempt counters
+        updateVerificationAttempts(caller, challengeId, false);
+        // Remove ongoing verification
+        ongoingVerifications := Trie.replace(
+          ongoingVerifications,
+          { key = caller; hash = Principal.hash(caller) },
+          Principal.equal,
+          null,
+        ).0;
         setChallengeStatus(caller, challengeId, #failed(err));
         return #error(err);
       };
@@ -1023,25 +1189,242 @@ private func _storeFollowersData(targetUserId : Text, json : Json.Json) : () {
   Debug.print("Stored " # Nat.toText(followerIds.size()) # " followers for user " # targetUserId);
 };
 
-// Check if a user follows another user using cached data
-private func _checkIfUserFollows(sourceUserId : Text, targetUserId : Text) : Bool {
-  // Find the target user in the cache
-  for ((userId, followerIds) in followersCache.vals()) {
-    if (userId == targetUserId) {
-      // Check if sourceUserId is in the followers list
-      for (followerId in followerIds.vals()) {
-        if (followerId == sourceUserId) {
-          return true;
+  // Check if a user follows another user using cached data
+  private func _checkIfUserFollows(sourceUserId : Text, targetUserId : Text) : Bool {
+    // Find the target user in the cache
+    for ((userId, followerIds) in followersCache.vals()) {
+      if (userId == targetUserId) {
+        // Check if sourceUserId is in the followers list
+        for (followerId in followerIds.vals()) {
+          if (followerId == sourceUserId) {
+            return true;
+          };
         };
+        return false;
       };
-      return false;
+    };
+    Debug.print("No cached followers data for user " # targetUserId);
+    false;
+  };
+
+  // Update verification attempts counter
+  private func updateVerificationAttempts(caller : Principal, challengeId : Nat, success : Bool) : () {
+    let now = Time.now();
+
+    // Get or create user attempts map
+    let userAttempts = switch (Trie.find(verificationAttempts, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
+      case (?attempts) { attempts };
+      case (null) { Trie.empty() };
+    };
+
+    // Get current attempts for this challenge
+    let currentAttempts = switch (Trie.find(userAttempts, { key = challengeId; hash = Hash.hash(challengeId) }, Nat.equal)) {
+      case (?attemptData) { attemptData };
+      case (null) {
+        { attempts = 0; lastAttempt = now };
+      };
+    };
+
+    if (not success) {
+      // Increment attempts on failure
+      let newAttempts = currentAttempts.attempts + 1;
+      let updatedAttemptData = {
+        attempts = newAttempts;
+        lastAttempt = now;
+      };
+
+      let updatedUserAttempts = Trie.replace(
+        userAttempts,
+        { key = challengeId; hash = Hash.hash(challengeId) },
+        Nat.equal,
+        ?updatedAttemptData,
+      ).0;
+
+      verificationAttempts := Trie.replace(
+        verificationAttempts,
+        { key = caller; hash = Principal.hash(caller) },
+        Principal.equal,
+        ?updatedUserAttempts,
+      ).0;
+
+      // Update consecutive failures
+      let currentFailures = switch (Trie.find(consecutiveFailures, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
+        case (?failures) { failures };
+        case (null) { { count = 0; lastFailure = now } };
+      };
+
+      let newFailureCount = currentFailures.count + 1;
+      let updatedFailures = {
+        count = newFailureCount;
+        lastFailure = now;
+      };
+
+      consecutiveFailures := Trie.replace(
+        consecutiveFailures,
+        { key = caller; hash = Principal.hash(caller) },
+        Principal.equal,
+        ?updatedFailures,
+      ).0;
+
+      // Check if we should permanently block the user
+      if (newFailureCount >= PERMANENT_BLOCK_THRESHOLD) {
+        let blockData = {
+          blockedAt = now;
+          reason = "Permanent block due to excessive consecutive verification failures";
+          totalFailures = newFailureCount;
+        };
+        permanentBlocks := Trie.replace(
+          permanentBlocks,
+          { key = caller; hash = Principal.hash(caller) },
+          Principal.equal,
+          ?blockData,
+        ).0;
+        Debug.print("User " # Principal.toText(caller) # " permanently blocked due to " # Nat.toText(newFailureCount) # " consecutive failures");
+      } else if (newFailureCount >= MAX_CONSECUTIVE_FAILURES) {
+        // Severe lockout for cases between MAX_CONSECUTIVE_FAILURES and PERMANENT_BLOCK_THRESHOLD
+        let severeLockoutDuration = BASE_VERIFICATION_COOLDOWN * 6; // 30 minutes for severe cases
+        let lockoutData = {
+          lockedUntil = now + severeLockoutDuration;
+          reason = "Severe lockout due to excessive consecutive failures";
+          failureCount = newFailureCount;
+        };
+        verificationLockouts := Trie.replace(
+          verificationLockouts,
+          { key = caller; hash = Principal.hash(caller) },
+          Principal.equal,
+          ?lockoutData,
+        ).0;
+        Debug.print("User " # Principal.toText(caller) # " severely locked out due to " # Nat.toText(newFailureCount) # " consecutive failures");
+      };
     };
   };
-  Debug.print("No cached followers data for user " # targetUserId);
-  false;
-};
 
-public query func greet(name : Text) : async Text {
-  return "Hello, " # name # "!";
-};
+  // Reset verification attempts on successful verification
+  private func resetVerificationAttempts(caller : Principal, challengeId : Nat) : () {
+    let userAttemptsOpt = Trie.find(verificationAttempts, { key = caller; hash = Principal.hash(caller) }, Principal.equal);
+    switch (userAttemptsOpt) {
+      case (?userAttempts) {
+        let updatedUserAttempts = Trie.replace(
+          userAttempts,
+          { key = challengeId; hash = Hash.hash(challengeId) },
+          Nat.equal,
+          null, // Remove the attempts for this challenge
+        ).0;
+
+        verificationAttempts := Trie.replace(
+          verificationAttempts,
+          { key = caller; hash = Principal.hash(caller) },
+          Principal.equal,
+          ?updatedUserAttempts,
+        ).0;
+      };
+      case (null) { /* No attempts to reset */ };
+    };
+
+    // Reset consecutive failures on success
+    consecutiveFailures := Trie.replace(
+      consecutiveFailures,
+      { key = caller; hash = Principal.hash(caller) },
+      Principal.equal,
+      null,
+    ).0;
+
+    // Also clear any lockout on success
+    verificationLockouts := Trie.replace(
+      verificationLockouts,
+      { key = caller; hash = Principal.hash(caller) },
+      Principal.equal,
+      null,
+    ).0;
+  };
+
+ public query func greet(name : Text) : async Text {
+   return "Hello, " # name # "!";
+ };
+
+ // Admin function to unblock a permanently blocked user
+ public shared ({ caller }) func unblockUser(userPrincipal : Principal) : async Bool {
+   // Check if caller is admin
+   if (not isCallerAdmin(caller)) {
+     Debug.trap("Only admin can unblock users");
+   };
+
+   // Check if user is actually blocked
+   switch (Trie.find(permanentBlocks, { key = userPrincipal; hash = Principal.hash(userPrincipal) }, Principal.equal)) {
+     case (?block) {
+       // Remove from permanent blocks
+       permanentBlocks := Trie.replace(
+         permanentBlocks,
+         { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+         Principal.equal,
+         null,
+       ).0;
+
+       // Also clear consecutive failures to give them a fresh start
+       consecutiveFailures := Trie.replace(
+         consecutiveFailures,
+         { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+         Principal.equal,
+         null,
+       ).0;
+
+       Debug.print("Admin " # Principal.toText(caller) # " unblocked user " # Principal.toText(userPrincipal));
+       return true;
+     };
+     case (null) {
+       Debug.print("User " # Principal.toText(userPrincipal) # " is not permanently blocked");
+       return false;
+     };
+   };
+ };
+
+ // Admin function to get list of permanently blocked users
+ public query ({ caller }) func getBlockedUsers() : async [{
+   principal : Principal;
+   blockedAt : Time.Time;
+   reason : Text;
+   totalFailures : Nat;
+ }] {
+   // Check if caller is admin
+   if (not isCallerAdmin(caller)) {
+     Debug.trap("Only admin can view blocked users");
+   };
+
+   // Convert Trie to array for return
+   var blockedUsers : [{
+     principal : Principal;
+     blockedAt : Time.Time;
+     reason : Text;
+     totalFailures : Nat;
+   }] = [];
+
+   for ((principal, blockData) in Trie.iter(permanentBlocks)) {
+     blockedUsers := Array.append(blockedUsers, [{
+       principal = principal;
+       blockedAt = blockData.blockedAt;
+       reason = blockData.reason;
+       totalFailures = blockData.totalFailures;
+     }]);
+   };
+
+   return blockedUsers;
+ };
+
+ // Check if a user is permanently blocked (public query)
+ public query func isUserBlocked(principal : Principal) : async ?{
+   blockedAt : Time.Time;
+   reason : Text;
+   totalFailures : Nat;
+ } {
+   switch (Trie.find(permanentBlocks, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
+     case (?blockData) {
+       return ?{
+         blockedAt = blockData.blockedAt;
+         reason = blockData.reason;
+         totalFailures = blockData.totalFailures;
+       };
+     };
+     case (null) { return null };
+   };
+ };
 };

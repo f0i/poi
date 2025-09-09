@@ -16,8 +16,20 @@ function ChallengeList() {
   const [verificationResults, setVerificationResults] = useState({});
   const [challengeStatuses, setChallengeStatuses] = useState({});
   const [isAdmin, setIsAdmin] = useState(false);
+  const [rateLimitedChallenges, setRateLimitedChallenges] = useState({});
 
   const challengeService = new ChallengeService(identity);
+
+  // Helper function to detect rate limiting errors
+  const isRateLimitError = (errorMessage) => {
+    return errorMessage && (
+      errorMessage.includes('temporarily locked') ||
+      errorMessage.includes('Too many verification attempts') ||
+      errorMessage.includes('Verification delayed') ||
+      errorMessage.includes('currently verifying another challenge') ||
+      errorMessage.includes('permanently blocked')
+    );
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -104,6 +116,20 @@ function ChallengeList() {
         [challengeId]: result
       }));
 
+      // Check if this is a rate limiting error
+      if (result.error && isRateLimitError(result.error)) {
+        setRateLimitedChallenges(prev => ({
+          ...prev,
+          [challengeId]: true
+        }));
+      } else {
+        // Clear rate limit status if not rate limited
+        setRateLimitedChallenges(prev => ({
+          ...prev,
+          [challengeId]: false
+        }));
+      }
+
       // Refresh challenge status after verification
       const status = await challengeService.getChallengeStatus(challengeId);
       if (status) {
@@ -116,7 +142,7 @@ function ChallengeList() {
       console.error('Failed to verify challenge:', error);
       setVerificationResults(prev => ({
         ...prev,
-        [challengeId]: { error: 'Verification failed' }
+        [challengeId]: { error: 'Verification failed. Please try again.' }
       }));
     } finally {
       setVerifyingChallenge(null);
@@ -334,12 +360,28 @@ function ChallengeList() {
                         {/* Admin Actions */}
                         {isAdmin && (
                           <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-600">
-                            <button
-                              onClick={() => handleVerifyChallenge(challenge.id)}
-                              disabled={verifyingChallenge === challenge.id}
-                              className="btn-primary text-sm px-4 py-2 flex items-center justify-center"
-                              title="Verify challenge"
-                            >
+                             <button
+                               onClick={() => handleVerifyChallenge(challenge.id)}
+                               disabled={
+                                 verifyingChallenge === challenge.id ||
+                                 rateLimitedChallenges[challenge.id] ||
+                                 (verificationResults[challenge.id] && verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked'))
+                               }
+                               className={`text-sm px-4 py-2 flex items-center justify-center ${
+                                 (verificationResults[challenge.id] && verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked'))
+                                   ? 'btn-danger opacity-50 cursor-not-allowed'
+                                   : rateLimitedChallenges[challenge.id]
+                                   ? 'btn-secondary opacity-50 cursor-not-allowed'
+                                   : 'btn-primary'
+                               }`}
+                               title={
+                                 (verificationResults[challenge.id] && verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked'))
+                                   ? 'Account permanently blocked'
+                                   : rateLimitedChallenges[challenge.id]
+                                   ? 'Rate limited - please wait'
+                                   : 'Verify challenge'
+                               }
+                             >
                               {verifyingChallenge === challenge.id ? (
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                               ) : (
@@ -367,7 +409,13 @@ function ChallengeList() {
 
                         {/* Verification Result */}
                         {verificationResults[challenge.id] && (
-                          <div className="mt-3 p-3 rounded-lg border border-slate-600 bg-slate-700/50">
+                          <div className={`mt-3 p-3 rounded-lg border bg-slate-700/50 ${
+                            verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked')
+                              ? 'border-red-500/50 bg-red-500/10'
+                              : rateLimitedChallenges[challenge.id]
+                              ? 'border-orange-500/50 bg-orange-500/10'
+                              : 'border-slate-600'
+                          }`}>
                             {verificationResults[challenge.id].success !== undefined ? (
                               verificationResults[challenge.id].success ? (
                                 <div className="flex items-start text-green-400">
@@ -395,12 +443,30 @@ function ChallengeList() {
                                 </div>
                               )
                             ) : (
-                              <div className="flex items-start text-red-400">
+                              <div className={`flex items-start ${
+                                verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked')
+                                  ? 'text-red-400'
+                                  : rateLimitedChallenges[challenge.id]
+                                  ? 'text-orange-400'
+                                  : 'text-red-400'
+                              }`}>
                                 <svg className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={
+                                    verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked')
+                                      ? "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                                      : rateLimitedChallenges[challenge.id]
+                                      ? "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      : "M6 18L18 6M6 6l12 12"
+                                  } />
                                 </svg>
                                 <div className="min-w-0 flex-1">
-                                  <span className="font-medium block">Verification Failed</span>
+                                  <span className="font-medium block">
+                                    {verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked')
+                                      ? 'Account Blocked'
+                                      : rateLimitedChallenges[challenge.id]
+                                      ? 'Rate Limited'
+                                      : 'Verification Failed'}
+                                  </span>
                                   <span className="text-sm text-slate-400 break-words">
                                     {verificationResults[challenge.id].error}
                                   </span>
