@@ -45,7 +45,7 @@ function AuthApp() {
               </p>
             </div>
             <button onClick={login} className="btn-primary w-full">
-              Sign In with Internet Identity
+              Sign In with Identify/X
             </button>
           </div>
         ) : (

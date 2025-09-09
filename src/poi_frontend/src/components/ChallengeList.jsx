@@ -360,39 +360,42 @@ function ChallengeList() {
                         {/* Admin Actions */}
                         {isAdmin && (
                           <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-600">
-                             <button
-                               onClick={() => handleVerifyChallenge(challenge.id)}
-                               disabled={
-                                 verifyingChallenge === challenge.id ||
-                                 rateLimitedChallenges[challenge.id] ||
-                                 (verificationResults[challenge.id] && verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked'))
-                               }
-                               className={`text-sm px-4 py-2 flex items-center justify-center ${
-                                 (verificationResults[challenge.id] && verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked'))
-                                   ? 'btn-danger opacity-50 cursor-not-allowed'
-                                   : rateLimitedChallenges[challenge.id]
-                                   ? 'btn-secondary opacity-50 cursor-not-allowed'
-                                   : 'btn-primary'
-                               }`}
-                               title={
-                                 (verificationResults[challenge.id] && verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked'))
-                                   ? 'Account permanently blocked'
-                                   : rateLimitedChallenges[challenge.id]
-                                   ? 'Rate limited - please wait'
-                                   : 'Verify challenge'
-                               }
-                             >
-                              {verifyingChallenge === challenge.id ? (
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
-                                  Verify Challenge
-                                </>
-                              )}
-                            </button>
+                            {/* Only show verify button if challenge is not already verified */}
+                            {!(challengeStatuses[challenge.id] && challengeStatuses[challenge.id].verified !== undefined) && (
+                              <button
+                                onClick={() => handleVerifyChallenge(challenge.id)}
+                                disabled={
+                                  verifyingChallenge === challenge.id ||
+                                  rateLimitedChallenges[challenge.id] ||
+                                  (verificationResults[challenge.id] && verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked'))
+                                }
+                                className={`text-sm px-4 py-2 flex items-center justify-center ${
+                                  (verificationResults[challenge.id] && verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked'))
+                                    ? 'btn-danger opacity-50 cursor-not-allowed'
+                                    : rateLimitedChallenges[challenge.id]
+                                    ? 'btn-secondary opacity-50 cursor-not-allowed'
+                                    : 'btn-primary'
+                                }`}
+                                title={
+                                  (verificationResults[challenge.id] && verificationResults[challenge.id].error && verificationResults[challenge.id].error.includes('permanently blocked'))
+                                    ? 'Account permanently blocked'
+                                    : rateLimitedChallenges[challenge.id]
+                                    ? 'Rate limited - please wait'
+                                    : 'Verify challenge'
+                                }
+                              >
+                               {verifyingChallenge === challenge.id ? (
+                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                               ) : (
+                                 <>
+                                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                   </svg>
+                                   Verify Challenge
+                                 </>
+                               )}
+                             </button>
+                            )}
 
                             <button
                               onClick={() => handleDeleteChallenge(challenge.id)}

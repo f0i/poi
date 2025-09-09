@@ -107,12 +107,7 @@ persistent actor {
   private var admin : ?Principal = null;
 
   // User points tracking: Principal -> { challengePoints, followerPoints, totalPoints, lastUpdated }
-  private var userPoints : Trie.Trie<Principal, {
-    challengePoints : Nat;
-    followerPoints : Nat;
-    totalPoints : Nat;
-    lastUpdated : Time.Time;
-  }> = Trie.empty();
+  private var userPoints : Trie.Trie<Principal, { challengePoints : Nat; followerPoints : Nat; totalPoints : Nat; lastUpdated : Time.Time }> = Trie.empty();
 
   // Challenge status type for external use
   public type ChallengeStatus = {
@@ -223,28 +218,28 @@ persistent actor {
     Debug.print("Fetching user data from external canister for principal: " # Principal.toText(principal));
     try {
       let userDataActor = await* getUserDataActor();
-       let userOpt = await userDataActor.getUser(principal, origin);
-       switch (userOpt) {
-         case (?user) {
-           // Debug log user data fields
-           Debug.print("User data received - username: " # (switch (user.username) { case (?u) u; case (null) "null" }));
-           Debug.print("User data received - followers_count: " # (switch (user.followers_count) { case (?fc) Nat.toText(fc); case (null) "null" }));
-           Debug.print("User data received - following_count: " # (switch (user.following_count) { case (?fc) Nat.toText(fc); case (null) "null" }));
+      let userOpt = await userDataActor.getUser(principal, origin);
+      switch (userOpt) {
+        case (?user) {
+          // Debug log user data fields
+          Debug.print("User data received - username: " # (switch (user.username) { case (?u) u; case (null) "null" }));
+          Debug.print("User data received - followers_count: " # (switch (user.followers_count) { case (?fc) Nat.toText(fc); case (null) "null" }));
+          Debug.print("User data received - following_count: " # (switch (user.following_count) { case (?fc) Nat.toText(fc); case (null) "null" }));
 
-           // Store in cache
-           let cachedUser : CachedUser = {
-             user = user;
-             timestamp = Time.now();
-             ttl = CACHE_TTL;
-           };
-           userDataStore := Trie.replace(
-             userDataStore,
-             { key = principal; hash = Principal.hash(principal) },
-             Principal.equal,
-             ?cachedUser,
-           ).0;
-           Debug.print("Stored user data in cache for principal: " # Principal.toText(principal));
-           return ?user;
+          // Store in cache
+          let cachedUser : CachedUser = {
+            user = user;
+            timestamp = Time.now();
+            ttl = CACHE_TTL;
+          };
+          userDataStore := Trie.replace(
+            userDataStore,
+            { key = principal; hash = Principal.hash(principal) },
+            Principal.equal,
+            ?cachedUser,
+          ).0;
+          Debug.print("Stored user data in cache for principal: " # Principal.toText(principal));
+          return ?user;
         };
         case (null) {
           Debug.print("No user data found for principal: " # Principal.toText(principal));
@@ -317,21 +312,21 @@ persistent actor {
           switch (cachedUser.user.followers_count) {
             case (?count) {
               Debug.print("Fresh follower count found: " # Nat.toText(count));
-              calculateFollowerPoints(count)
+              calculateFollowerPoints(count);
             };
             case (null) {
               Debug.print("No fresh follower count available");
-              0
+              0;
             };
           };
         } else {
           Debug.print("Fresh cached data is invalid");
-          0
+          0;
         };
       };
       case (null) {
         Debug.print("No fresh cached user data found");
-        0
+        0;
       };
     };
 
@@ -600,21 +595,21 @@ persistent actor {
           switch (cachedUser.user.followers_count) {
             case (?count) {
               Debug.print("Follower count found: " # Nat.toText(count));
-              calculateFollowerPoints(count)
+              calculateFollowerPoints(count);
             };
             case (null) {
               Debug.print("No follower count in user data");
-              0
+              0;
             };
           };
         } else {
           Debug.print("Cached user data is stale, cannot calculate follower points");
-          0
+          0;
         };
       };
       case (null) {
         Debug.print("No cached user data found for follower calculation");
-        0
+        0;
       };
     };
 
@@ -706,27 +701,13 @@ persistent actor {
         };
       };
 
-      leaderboard := Array.append(leaderboard, [{
-        principal = principal;
-        challengePoints = points.challengePoints;
-        followerPoints = points.followerPoints;
-        totalPoints = points.totalPoints;
-        username = userInfo.username;
-        name = userInfo.name;
-      }]);
+      leaderboard := Array.append(leaderboard, [{ principal = principal; challengePoints = points.challengePoints; followerPoints = points.followerPoints; totalPoints = points.totalPoints; username = userInfo.username; name = userInfo.name }]);
     };
 
     // Sort by total points descending
-    leaderboard := Array.sort<{
-      principal : Principal;
-      challengePoints : Nat;
-      followerPoints : Nat;
-      totalPoints : Nat;
-      username : ?Text;
-      name : ?Text;
-    }>(
+    leaderboard := Array.sort<{ principal : Principal; challengePoints : Nat; followerPoints : Nat; totalPoints : Nat; username : ?Text; name : ?Text }>(
       leaderboard,
-      func(a, b) = Nat.compare(b.totalPoints, a.totalPoints)
+      func(a, b) = Nat.compare(b.totalPoints, a.totalPoints),
     );
 
     return leaderboard;
@@ -777,7 +758,7 @@ persistent actor {
           let remainingNanos = lockout.lockedUntil - now;
           let remainingSeconds : Nat = if (remainingNanos > 0) {
             let seconds = remainingNanos / 1_000_000_000;
-            if (seconds < 0) { 0 } else { Int.abs(seconds) }
+            if (seconds < 0) { 0 } else { Int.abs(seconds) };
           } else { 0 };
           return #error("Verification temporarily locked due to " # Nat.toText(lockout.failureCount) # " consecutive failures. Try again in " # Nat.toText(remainingSeconds) # " seconds.");
         } else {
@@ -809,8 +790,9 @@ persistent actor {
       case (?failures) {
         // Check if failures are recent (within last hour)
         let timeSinceLastFailure = now - failures.lastFailure;
-        if (timeSinceLastFailure < 3_600_000_000_000) { // 1 hour in nanoseconds
-          failures.count
+        if (timeSinceLastFailure < 3_600_000_000_000) {
+          // 1 hour in nanoseconds
+          failures.count;
         } else {
           0 // Reset if more than an hour has passed
         };
@@ -831,7 +813,7 @@ persistent actor {
         let remainingNanos = delayDuration - timeSinceLastFailure;
         let remainingSeconds : Nat = if (remainingNanos > 0) {
           let seconds = remainingNanos / 1_000_000_000;
-          if (seconds < 0) { 0 } else { Int.abs(seconds) }
+          if (seconds < 0) { 0 } else { Int.abs(seconds) };
         } else { 0 };
         return #error("Verification delayed due to " # Nat.toText(currentFailureCount) # " recent failures. Try again in " # Nat.toText(remainingSeconds) # " seconds.");
       };
@@ -914,9 +896,28 @@ persistent actor {
         setChallengeStatus(caller, challengeId, #failed("User does not have a Twitter/X account linked"));
         return #error("User does not have a Twitter/X account linked");
       };
-    };
+     };
 
-    // User has Twitter/X account, proceed with verification
+     // Check if user is trying to follow themselves
+     switch (cachedUser.user.username) {
+       case (?username) {
+         if (username == targetUser.user) {
+           // Update attempt counters and remove ongoing verification
+           updateVerificationAttempts(caller, challengeId, false);
+           ongoingVerifications := Trie.replace(
+             ongoingVerifications,
+             { key = caller; hash = Principal.hash(caller) },
+             Principal.equal,
+             null,
+           ).0;
+           setChallengeStatus(caller, challengeId, #failed("Cannot follow yourself"));
+           return #error("Cannot follow yourself");
+         };
+       };
+       case (null) { /* continue */ };
+     };
+
+     // User has Twitter/X account, proceed with verification
     Debug.print("User has valid Twitter/X account, starting following verification for challenge " # Nat.toText(challengeId));
     let result = await verifyTwitterFollowing(caller, cachedUser.user.username, targetUser.user);
     switch (result) {
@@ -967,8 +968,6 @@ persistent actor {
       };
     };
   };
-
-
 
   // Helper function to verify Twitter following relationship using Apify
   private func verifyTwitterFollowing(caller : Principal, sourceUsername : ?Text, targetUsername : Text) : async {
@@ -1097,7 +1096,7 @@ persistent actor {
     #error : Text;
   } {
     Debug.print("Fetching dataset results for ID: " # datasetId);
-    let url = "https://api.apify.com/v2/datasets/" # datasetId # "/items?token=" # apifyBearerToken;
+    let url = "https://api.apify.com/v2/datasets/" # datasetId # "/items";
 
     let request_headers = [
       { name = "Content-Type"; value = "application/json" },
@@ -1147,7 +1146,7 @@ persistent actor {
       case (?#bool(following)) following;
       case (_) {
         Debug.print("Dataset fetch failed: user_a_follows_user_b field not found");
-        return #error("user_a_follows_user_b field not found in dataset item");
+        return #error("user_a_follows_user_b field not found in dataset item: " # decoded_text);
       };
     };
 
@@ -1155,39 +1154,39 @@ persistent actor {
     return #success(isFollowing);
   };
 
-// Store followers data from Twitter API response
-private func _storeFollowersData(targetUserId : Text, json : Json.Json) : () {
-  // Extract followers from the JSON response
-  // Twitter API response format: {"data": [{"id": "123", "username": "user"}, ...], ...}
-  let ?followersJson = Json.get(json, "data") else {
-    Debug.print("No data field in Twitter API response");
-    return;
-  };
-
-  let #array(followers) = followersJson else {
-    Debug.print("No followers data found in response");
-    return;
-  };
-
-  // Extract follower IDs
-  var followerIds : [Text] = [];
-  for (follower in followers.vals()) {
-    switch (Json.get(follower, "id")) {
-      case (?#string(id)) {
-        followerIds := Array.append(followerIds, [id]);
-      };
-      case (_) { /* Skip invalid entries */ };
+  // Store followers data from Twitter API response
+  private func _storeFollowersData(targetUserId : Text, json : Json.Json) : () {
+    // Extract followers from the JSON response
+    // Twitter API response format: {"data": [{"id": "123", "username": "user"}, ...], ...}
+    let ?followersJson = Json.get(json, "data") else {
+      Debug.print("No data field in Twitter API response");
+      return;
     };
+
+    let #array(followers) = followersJson else {
+      Debug.print("No followers data found in response");
+      return;
+    };
+
+    // Extract follower IDs
+    var followerIds : [Text] = [];
+    for (follower in followers.vals()) {
+      switch (Json.get(follower, "id")) {
+        case (?#string(id)) {
+          followerIds := Array.append(followerIds, [id]);
+        };
+        case (_) { /* Skip invalid entries */ };
+      };
+    };
+
+    // Store in cache (simple array approach)
+    // Remove existing entry if it exists
+    followersCache := Array.filter<(Text, [Text])>(followersCache, func((userId, _)) { userId != targetUserId });
+    // Add new entry
+    followersCache := Array.append(followersCache, [(targetUserId, followerIds)]);
+
+    Debug.print("Stored " # Nat.toText(followerIds.size()) # " followers for user " # targetUserId);
   };
-
-  // Store in cache (simple array approach)
-  // Remove existing entry if it exists
-  followersCache := Array.filter<(Text, [Text])>(followersCache, func((userId, _)) { userId != targetUserId });
-  // Add new entry
-  followersCache := Array.append(followersCache, [(targetUserId, followerIds)]);
-
-  Debug.print("Stored " # Nat.toText(followerIds.size()) # " followers for user " # targetUserId);
-};
 
   // Check if a user follows another user using cached data
   private func _checkIfUserFollows(sourceUserId : Text, targetUserId : Text) : Bool {
@@ -1338,93 +1337,88 @@ private func _storeFollowersData(targetUserId : Text, json : Json.Json) : () {
     ).0;
   };
 
- public query func greet(name : Text) : async Text {
-   return "Hello, " # name # "!";
- };
+  public query func greet(name : Text) : async Text {
+    return "Hello, " # name # "!";
+  };
 
- // Admin function to unblock a permanently blocked user
- public shared ({ caller }) func unblockUser(userPrincipal : Principal) : async Bool {
-   // Check if caller is admin
-   if (not isCallerAdmin(caller)) {
-     Debug.trap("Only admin can unblock users");
-   };
+  // Admin function to unblock a permanently blocked user
+  public shared ({ caller }) func unblockUser(userPrincipal : Principal) : async Bool {
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can unblock users");
+    };
 
-   // Check if user is actually blocked
-   switch (Trie.find(permanentBlocks, { key = userPrincipal; hash = Principal.hash(userPrincipal) }, Principal.equal)) {
-     case (?block) {
-       // Remove from permanent blocks
-       permanentBlocks := Trie.replace(
-         permanentBlocks,
-         { key = userPrincipal; hash = Principal.hash(userPrincipal) },
-         Principal.equal,
-         null,
-       ).0;
+    // Check if user is actually blocked
+    switch (Trie.find(permanentBlocks, { key = userPrincipal; hash = Principal.hash(userPrincipal) }, Principal.equal)) {
+      case (?block) {
+        // Remove from permanent blocks
+        permanentBlocks := Trie.replace(
+          permanentBlocks,
+          { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+          Principal.equal,
+          null,
+        ).0;
 
-       // Also clear consecutive failures to give them a fresh start
-       consecutiveFailures := Trie.replace(
-         consecutiveFailures,
-         { key = userPrincipal; hash = Principal.hash(userPrincipal) },
-         Principal.equal,
-         null,
-       ).0;
+        // Also clear consecutive failures to give them a fresh start
+        consecutiveFailures := Trie.replace(
+          consecutiveFailures,
+          { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+          Principal.equal,
+          null,
+        ).0;
 
-       Debug.print("Admin " # Principal.toText(caller) # " unblocked user " # Principal.toText(userPrincipal));
-       return true;
-     };
-     case (null) {
-       Debug.print("User " # Principal.toText(userPrincipal) # " is not permanently blocked");
-       return false;
-     };
-   };
- };
+        Debug.print("Admin " # Principal.toText(caller) # " unblocked user " # Principal.toText(userPrincipal));
+        return true;
+      };
+      case (null) {
+        Debug.print("User " # Principal.toText(userPrincipal) # " is not permanently blocked");
+        return false;
+      };
+    };
+  };
 
- // Admin function to get list of permanently blocked users
- public query ({ caller }) func getBlockedUsers() : async [{
-   principal : Principal;
-   blockedAt : Time.Time;
-   reason : Text;
-   totalFailures : Nat;
- }] {
-   // Check if caller is admin
-   if (not isCallerAdmin(caller)) {
-     Debug.trap("Only admin can view blocked users");
-   };
+  // Admin function to get list of permanently blocked users
+  public query ({ caller }) func getBlockedUsers() : async [{
+    principal : Principal;
+    blockedAt : Time.Time;
+    reason : Text;
+    totalFailures : Nat;
+  }] {
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can view blocked users");
+    };
 
-   // Convert Trie to array for return
-   var blockedUsers : [{
-     principal : Principal;
-     blockedAt : Time.Time;
-     reason : Text;
-     totalFailures : Nat;
-   }] = [];
+    // Convert Trie to array for return
+    var blockedUsers : [{
+      principal : Principal;
+      blockedAt : Time.Time;
+      reason : Text;
+      totalFailures : Nat;
+    }] = [];
 
-   for ((principal, blockData) in Trie.iter(permanentBlocks)) {
-     blockedUsers := Array.append(blockedUsers, [{
-       principal = principal;
-       blockedAt = blockData.blockedAt;
-       reason = blockData.reason;
-       totalFailures = blockData.totalFailures;
-     }]);
-   };
+    for ((principal, blockData) in Trie.iter(permanentBlocks)) {
+      blockedUsers := Array.append(blockedUsers, [{ principal = principal; blockedAt = blockData.blockedAt; reason = blockData.reason; totalFailures = blockData.totalFailures }]);
+    };
 
-   return blockedUsers;
- };
+    return blockedUsers;
+  };
 
- // Check if a user is permanently blocked (public query)
- public query func isUserBlocked(principal : Principal) : async ?{
-   blockedAt : Time.Time;
-   reason : Text;
-   totalFailures : Nat;
- } {
-   switch (Trie.find(permanentBlocks, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
-     case (?blockData) {
-       return ?{
-         blockedAt = blockData.blockedAt;
-         reason = blockData.reason;
-         totalFailures = blockData.totalFailures;
-       };
-     };
-     case (null) { return null };
-   };
- };
+  // Check if a user is permanently blocked (public query)
+  public query func isUserBlocked(principal : Principal) : async ?{
+    blockedAt : Time.Time;
+    reason : Text;
+    totalFailures : Nat;
+  } {
+    switch (Trie.find(permanentBlocks, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
+      case (?blockData) {
+        return ?{
+          blockedAt = blockData.blockedAt;
+          reason = blockData.reason;
+          totalFailures = blockData.totalFailures;
+        };
+      };
+      case (null) { return null };
+    };
+  };
 };
