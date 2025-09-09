@@ -240,5 +240,19 @@ export class ChallengeService {
       throw error;
     }
   }
+
+  async recalculateAllUserPoints(): Promise<{
+    usersProcessed: bigint;
+    totalPointsUpdated: bigint;
+  }> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.recalculateAllUserPoints();
+      return result;
+    } catch (error) {
+      console.error("Failed to recalculate user points:", error);
+      throw error;
+    }
+  }
 }
 

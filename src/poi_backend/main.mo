@@ -536,6 +536,50 @@ persistent actor {
     return admin;
   };
 
+  // Admin function to recalculate points for all users
+  public shared ({ caller }) func recalculateAllUserPoints() : async {
+    usersProcessed : Nat;
+    totalPointsUpdated : Nat;
+  } {
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can recalculate points");
+    };
+
+    var usersProcessed : Nat = 0;
+    var totalPointsUpdated : Nat = 0;
+
+    // Iterate through all users with stored points
+    for ((user, _) in Trie.iter(userPoints)) {
+      let calculatedPoints = calculateUserPoints(user);
+
+      // Update stored points
+      let updatedPoints = {
+        challengePoints = calculatedPoints.challengePoints;
+        followerPoints = calculatedPoints.followerPoints;
+        totalPoints = calculatedPoints.totalPoints;
+        lastUpdated = Time.now();
+      };
+
+      userPoints := Trie.replace(
+        userPoints,
+        { key = user; hash = Principal.hash(user) },
+        Principal.equal,
+        ?updatedPoints,
+      ).0;
+
+      usersProcessed += 1;
+      totalPointsUpdated += calculatedPoints.totalPoints;
+    };
+
+    Debug.print("Recalculated points for " # Nat.toText(usersProcessed) # " users, total points: " # Nat.toText(totalPointsUpdated));
+
+    return {
+      usersProcessed = usersProcessed;
+      totalPointsUpdated = totalPointsUpdated;
+    };
+  };
+
   // Check if caller is admin
   private func isCallerAdmin(caller : Principal) : Bool {
     switch (admin) {
@@ -633,27 +677,73 @@ persistent actor {
     Debug.print("Awarded " # Nat.toText(challengePointsAwarded) # " points to user for challenge " # Nat.toText(challengeId) # ". Total: " # Nat.toText(newTotalPoints));
   };
 
-  // Get user points
+  // Calculate user points dynamically by checking challenge completion
+  private func calculateUserPoints(user : Principal) : {
+    challengePoints : Nat;
+    followerPoints : Nat;
+    totalPoints : Nat;
+  } {
+    // Calculate challenge points by checking completion status
+    var challengePoints : Nat = 0;
+    let userStatusesOpt = Trie.find(challengeStatuses, { key = user; hash = Principal.hash(user) }, Principal.equal);
+
+    switch (userStatusesOpt) {
+      case (?userStatuses) {
+        for ((challengeId, status) in Trie.iter(userStatuses)) {
+          if (status == #verified) {
+            // Find challenge and add its points
+            switch (Array.indexOf<Challenge>(
+              { id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0 },
+              challenges,
+              func(a, b) = a.id == b.id
+            )) {
+              case (?idx) {
+                let challenge = challenges[idx];
+                challengePoints += challenge.points;
+              };
+              case (null) {
+                // Challenge not found, skip
+              };
+            };
+          };
+        };
+      };
+      case (null) { /* No challenges completed */ };
+    };
+
+    // Calculate follower points from cached data
+    let followerPoints = switch (Trie.find(userDataStore, { key = user; hash = Principal.hash(user) }, Principal.equal)) {
+      case (?cachedUser) {
+        if (isCacheValid(cachedUser)) {
+          switch (cachedUser.user.followers_count) {
+            case (?count) { calculateFollowerPoints(count) };
+            case (null) { 0 };
+          };
+        } else { 0 };
+      };
+      case (null) { 0 };
+    };
+
+    let totalPoints = challengePoints + followerPoints;
+
+    return {
+      challengePoints = challengePoints;
+      followerPoints = followerPoints;
+      totalPoints = totalPoints;
+    };
+  };
+
+  // Get user points (calculated dynamically)
   public query ({ caller }) func getUserPoints() : async {
     challengePoints : Nat;
     followerPoints : Nat;
     totalPoints : Nat;
   } {
-    switch (Trie.find(userPoints, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
-      case (?points) {
-        {
-          challengePoints = points.challengePoints;
-          followerPoints = points.followerPoints;
-          totalPoints = points.totalPoints;
-        };
-      };
-      case (null) {
-        {
-          challengePoints = 0;
-          followerPoints = 0;
-          totalPoints = 0;
-        };
-      };
+    let calculatedPoints = calculateUserPoints(caller);
+    return {
+      challengePoints = calculatedPoints.challengePoints;
+      followerPoints = calculatedPoints.followerPoints;
+      totalPoints = calculatedPoints.totalPoints;
     };
   };
 
@@ -896,28 +986,28 @@ persistent actor {
         setChallengeStatus(caller, challengeId, #failed("User does not have a Twitter/X account linked"));
         return #error("User does not have a Twitter/X account linked");
       };
-     };
+    };
 
-     // Check if user is trying to follow themselves
-     switch (cachedUser.user.username) {
-       case (?username) {
-         if (username == targetUser.user) {
-           // Update attempt counters and remove ongoing verification
-           updateVerificationAttempts(caller, challengeId, false);
-           ongoingVerifications := Trie.replace(
-             ongoingVerifications,
-             { key = caller; hash = Principal.hash(caller) },
-             Principal.equal,
-             null,
-           ).0;
-           setChallengeStatus(caller, challengeId, #failed("Cannot follow yourself"));
-           return #error("Cannot follow yourself");
-         };
-       };
-       case (null) { /* continue */ };
-     };
+    // Check if user is trying to follow themselves
+    switch (cachedUser.user.username) {
+      case (?username) {
+        if (username == targetUser.user) {
+          // Update attempt counters and remove ongoing verification
+          updateVerificationAttempts(caller, challengeId, false);
+          ongoingVerifications := Trie.replace(
+            ongoingVerifications,
+            { key = caller; hash = Principal.hash(caller) },
+            Principal.equal,
+            null,
+          ).0;
+          setChallengeStatus(caller, challengeId, #failed("Cannot follow yourself"));
+          return #error("Cannot follow yourself");
+        };
+      };
+      case (null) { /* continue */ };
+    };
 
-     // User has Twitter/X account, proceed with verification
+    // User has Twitter/X account, proceed with verification
     Debug.print("User has valid Twitter/X account, starting following verification for challenge " # Nat.toText(challengeId));
     let result = await verifyTwitterFollowing(caller, cachedUser.user.username, targetUser.user);
     switch (result) {

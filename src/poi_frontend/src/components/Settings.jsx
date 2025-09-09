@@ -15,6 +15,8 @@ function Settings() {
   const [currentAdmin, setCurrentAdmin] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [settingAdmin, setSettingAdmin] = useState(false);
+  const [recalculating, setRecalculating] = useState(false);
+  const [recalcResult, setRecalcResult] = useState(null);
 
   const challengeService = new ChallengeService(identity);
 
@@ -72,6 +74,23 @@ function Settings() {
         alert('Failed to set admin. You might not be authorized or admin is already set.');
       } finally {
         setSettingAdmin(false);
+      }
+    }
+  };
+
+  const handleRecalculatePoints = async () => {
+    if (window.confirm('Are you sure you want to recalculate points for all users? This may take some time.')) {
+      setRecalculating(true);
+      setRecalcResult(null);
+      try {
+        const result = await challengeService.recalculateAllUserPoints();
+        setRecalcResult(result);
+        alert(`Successfully recalculated points for ${Number(result.usersProcessed)} users. Total points updated: ${Number(result.totalPointsUpdated)}`);
+      } catch (error) {
+        console.error('Failed to recalculate points:', error);
+        alert('Failed to recalculate points. Check console for details.');
+      } finally {
+        setRecalculating(false);
       }
     }
   };
@@ -166,26 +185,71 @@ function Settings() {
               </div>
             )}
 
-            {!currentAdmin && (
-              <div className="flex space-x-3">
-                <button
-                  onClick={handleSetAdmin}
-                  disabled={settingAdmin}
-                  className="btn-primary text-sm"
-                >
-                  {settingAdmin ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                      Set Myself as Admin
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
+             {!currentAdmin && (
+               <div className="flex space-x-3">
+                 <button
+                   onClick={handleSetAdmin}
+                   disabled={settingAdmin}
+                   className="btn-primary text-sm"
+                 >
+                   {settingAdmin ? (
+                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                   ) : (
+                     <>
+                       <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                       </svg>
+                       Set Myself as Admin
+                     </>
+                   )}
+                 </button>
+               </div>
+             )}
+
+             {isAdmin && (
+               <div className="border-t border-slate-600 pt-4 mt-4">
+                 <h5 className="text-white font-medium mb-3 flex items-center">
+                   <svg className="w-4 h-4 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                   </svg>
+                   Point System Management
+                 </h5>
+                 <div className="space-y-3">
+                   <p className="text-slate-400 text-sm">
+                     Recalculate points for all users based on their actual challenge completion status.
+                     This ensures data integrity and fixes any inconsistencies.
+                   </p>
+                   <button
+                     onClick={handleRecalculatePoints}
+                     disabled={recalculating}
+                     className="btn-primary text-sm"
+                   >
+                     {recalculating ? (
+                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                     ) : (
+                       <>
+                         <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                         </svg>
+                         Recalculate All Points
+                       </>
+                     )}
+                   </button>
+                   {recalcResult && (
+                     <div className="bg-green-900/20 border border-green-600 rounded-lg p-3">
+                       <div className="flex items-center space-x-2">
+                         <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                         </svg>
+                         <div className="text-green-400 text-sm">
+                           <strong>Recalculation Complete:</strong> {Number(recalcResult.usersProcessed)} users processed, {Number(recalcResult.totalPointsUpdated)} total points
+                         </div>
+                       </div>
+                     </div>
+                   )}
+                 </div>
+               </div>
+             )}
           </div>
         </div>
 
