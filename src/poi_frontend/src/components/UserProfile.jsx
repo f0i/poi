@@ -12,13 +12,28 @@ function UserProfile() {
   } = useAuth();
 
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userPoints, setUserPoints] = useState(null);
   const challengeService = new ChallengeService(identity);
 
   useEffect(() => {
     if (isAuthenticated) {
       checkAdminStatus();
+      loadUserPoints();
     }
   }, [isAuthenticated]);
+
+  const loadUserPoints = async () => {
+    try {
+      const points = await challengeService.getUserPoints();
+      setUserPoints(points);
+    } catch (error) {
+      console.error('Failed to load user points:', error);
+    }
+  };
+
+  const formatNumber = (num) => {
+    return new Intl.NumberFormat().format(Number(num));
+  };
 
   const checkAdminStatus = async () => {
     try {
@@ -139,14 +154,49 @@ function UserProfile() {
                 </div>
               </div>
             )}
-          </div>
+           </div>
 
-          {/* Logout Button */}
-          <div className="mt-6 pt-4 border-t border-slate-700">
-            <button onClick={logout} className="btn-secondary w-full">
-              Sign Out
-            </button>
-          </div>
+           {/* Points Stats */}
+           {userPoints && (
+             <div className="mt-6 pt-4 border-t border-slate-700">
+               <h4 className="text-md font-semibold text-white mb-4 flex items-center">
+                 <svg className="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                 </svg>
+                 Your Points
+               </h4>
+
+               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                 <div className="bg-slate-700 rounded-lg p-4 text-center">
+                   <div className="text-2xl font-bold text-green-400 mb-1">
+                     {formatNumber(userPoints.totalPoints)}
+                   </div>
+                   <p className="text-slate-400 text-sm">Total Points</p>
+                 </div>
+
+                 <div className="bg-slate-700 rounded-lg p-4 text-center">
+                   <div className="text-2xl font-bold text-purple-400 mb-1">
+                     {formatNumber(userPoints.challengePoints)}
+                   </div>
+                   <p className="text-slate-400 text-sm">Challenge Points</p>
+                 </div>
+
+                 <div className="bg-slate-700 rounded-lg p-4 text-center">
+                   <div className="text-2xl font-bold text-orange-400 mb-1">
+                     {formatNumber(userPoints.followerPoints)}
+                   </div>
+                   <p className="text-slate-400 text-sm">Follower Points</p>
+                 </div>
+               </div>
+             </div>
+           )}
+
+           {/* Logout Button */}
+           <div className="mt-6 pt-4 border-t border-slate-700">
+             <button onClick={logout} className="btn-secondary w-full">
+               Sign Out
+             </button>
+           </div>
         </div>
       ) : (
         <div className="card text-center">
