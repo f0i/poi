@@ -169,7 +169,7 @@ persistent actor {
   private let CACHE_TTL : Nat = 86400 * 1_000_000_000;
 
   // External canister actor reference
-  private func getUserDataActor() : async actor {
+  private func getUserDataActor() : async* actor {
     getUser : (Principal, Text) -> async ?User;
   } {
     actor (USER_DATA_CANISTER_ID);
@@ -186,9 +186,9 @@ persistent actor {
   private func fetchUserData(principal : Principal, origin : Text) : async ?User {
     Debug.print("Fetching user data from external canister for principal: " # Principal.toText(principal));
     try {
-      let userDataActor = await getUserDataActor();
-      let result = await userDataActor.getUser(principal, origin);
-      switch (result) {
+      let userDataActor = await* getUserDataActor();
+      let userOpt = await userDataActor.getUser(principal, origin);
+      switch (userOpt) {
         case (?user) {
           // Store in cache
           let cachedUser : CachedUser = {
@@ -203,83 +203,70 @@ persistent actor {
             ?cachedUser,
           ).0;
           Debug.print("Stored user data in cache for principal: " # Principal.toText(principal));
-          ?user;
+          return ?user;
         };
         case (null) {
           Debug.print("No user data found for principal: " # Principal.toText(principal));
-          null;
+          return null;
         };
       };
     } catch (_error) {
       // Log error and return null
       Debug.print("Error fetching user data for principal: " # Principal.toText(principal));
-      null;
+      return null;
     };
   };
 
   // Get user data (from cache or fetch from external canister)
-  public shared (msg) func getUserData(origin : Text) : async ?User {
-    let principal = msg.caller;
-
-    Debug.print("Getting user data for principal: " # Principal.toText(principal));
+  public shared ({ caller }) func getUserData(origin : Text) : async ?User {
+    Debug.print("Getting user data for principal: " # Principal.toText(caller));
 
     // Check cache first
-    switch (Trie.find(userDataStore, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
+    let cachedOpt = Trie.find(userDataStore, { key = caller; hash = Principal.hash(caller) }, Principal.equal);
+    switch (cachedOpt) {
       case (?cached) {
         if (isCacheValid(cached)) {
-          Debug.print("Returning cached user data for principal: " # Principal.toText(principal));
-          ?cached.user;
-        } else {
-          // Cache expired, fetch fresh data
-          Debug.print("Cache expired, fetching fresh data for principal: " # Principal.toText(principal));
-          await fetchUserData(principal, origin);
+          Debug.print("Returning cached user data for principal: " # Principal.toText(caller));
+          return ?cached.user;
         };
       };
-      case (null) {
-        // No cached data, fetch from external canister
-        Debug.print("No cached data, fetching from external canister for principal: " # Principal.toText(principal));
-        await fetchUserData(principal, origin);
-      };
+      case (null) {};
     };
+
+    // Cache expired or no cached data, fetch from external canister
+    Debug.print("Fetching fresh data for principal: " # Principal.toText(caller));
+    return await fetchUserData(caller, origin);
   };
 
   // Refresh user data (force fetch from external canister)
-  public shared (msg) func refreshUserData(origin : Text) : async ?User {
-    let principal = msg.caller;
-    Debug.print("Refreshing user data for principal: " # Principal.toText(principal));
-    await fetchUserData(principal, origin);
+  public shared ({ caller }) func refreshUserData(origin : Text) : async ?User {
+    Debug.print("Refreshing user data for principal: " # Principal.toText(caller));
+    return await fetchUserData(caller, origin);
   };
 
   // Get cached user data without fetching (query call)
-  public query (msg) func getCachedUserData() : async ?User {
-    let principal = msg.caller;
-    switch (Trie.find(userDataStore, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
+  public query ({ caller }) func getCachedUserData() : async ?User {
+    let cachedOpt = Trie.find(userDataStore, { key = caller; hash = Principal.hash(caller) }, Principal.equal);
+    switch (cachedOpt) {
       case (?cached) {
         if (isCacheValid(cached)) {
-          ?cached.user;
+          return ?cached.user;
         } else {
-          null;
+          return null;
         };
       };
-      case (null) { null };
+      case (null) { return null };
     };
   };
 
   // Challenge CRUD operations
 
   // Create a new challenge
-  public shared (msg) func createChallenge(description : Text, challengeType : ChallengeType) : async Nat {
-    let caller = msg.caller;
+  public shared ({ caller }) func createChallenge(description : Text, challengeType : ChallengeType) : async Nat {
     // TODO: Add authorization check if needed
 
     let challengeId = nextChallengeId;
     nextChallengeId += 1;
-
-    let challenge : Challenge = {
-      id = challengeId;
-      description = description;
-      challengeType = challengeType;
-    };
 
     let newChallenge : Challenge = {
       id = challengeId;
@@ -290,80 +277,70 @@ persistent actor {
 
     Debug.print("Created challenge: " # Nat.toText(challengeId) # " - " # description);
 
-    challengeId;
+    return challengeId;
   };
 
   // Get all challenges
   public query func getChallenges() : async [Challenge] {
-    challenges;
+    return challenges;
   };
 
   // Get a specific challenge by ID
   public query func getChallenge(id : Nat) : async ?Challenge {
-    Array.find<Challenge>(challenges, func(c) = c.id == id);
+    return Array.find<Challenge>(challenges, func(c) = c.id == id);
   };
 
   // Update a challenge
-  public shared (msg) func updateChallenge(id : Nat, description : Text, challengeType : ChallengeType) : async Bool {
-    let caller = msg.caller;
+  public shared ({ caller }) func updateChallenge(id : Nat, description : Text, challengeType : ChallengeType) : async Bool {
     // TODO: Add authorization check if needed
 
-    let challengeIndex = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id);
-    switch (challengeIndex) {
-      case (?index) {
-        let updatedChallenge : Challenge = {
-          id = id;
-          description = description;
-          challengeType = challengeType;
-        };
-        challenges := Array.tabulate<Challenge>(
-          challenges.size(),
-          func(i) {
-            if (i == index) { updatedChallenge } else { challenges[i] };
-          },
-        );
-        Debug.print("Updated challenge: " # Nat.toText(id));
-        true;
-      };
-      case (null) {
-        Debug.print("Challenge not found for update: " # Nat.toText(id));
-        false;
-      };
+    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id) else {
+      Debug.print("Challenge not found for update: " # Nat.toText(id));
+      return false;
     };
+
+    let updatedChallenge : Challenge = {
+      id = id;
+      description = description;
+      challengeType = challengeType;
+    };
+    challenges := Array.tabulate<Challenge>(
+      challenges.size(),
+      func(i) {
+        if (i == index) { updatedChallenge } else { challenges[i] };
+      },
+    );
+    Debug.print("Updated challenge: " # Nat.toText(id));
+    return true;
   };
 
   // Delete a challenge
-  public shared (msg) func deleteChallenge(id : Nat) : async Bool {
-    let caller = msg.caller;
+  public shared ({ caller }) func deleteChallenge(id : Nat) : async Bool {
     // TODO: Add authorization check if needed
 
-    let challengeIndex = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id);
-    switch (challengeIndex) {
-      case (?index) {
-        challenges := Array.tabulate<Challenge>(
-          challenges.size() - 1,
-          func(i) {
-            challenges[if (i < index) { i } else { i + 1 }];
-          },
-        );
-        Debug.print("Deleted challenge: " # Nat.toText(id));
-        true;
-      };
-      case (null) {
-        Debug.print("Challenge not found for deletion: " # Nat.toText(id));
-        false;
-      };
+    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id) else {
+      Debug.print("Challenge not found for deletion: " # Nat.toText(id));
+      return false;
     };
+
+    challenges := Array.tabulate<Challenge>(
+      challenges.size() - 1,
+      func(i) {
+        challenges[if (i < index) { i } else { i + 1 }];
+      },
+    );
+    Debug.print("Deleted challenge: " # Nat.toText(id));
+    return true;
   };
 
   // Get challenge status for current user
-  public query (msg) func getChallengeStatus(challengeId : Nat) : async ?ChallengeStatus {
-    let caller = msg.caller;
-    switch (Trie.find(challengeStatuses, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
+  public query ({ caller }) func getChallengeStatus(challengeId : Nat) : async ?ChallengeStatus {
+    let userStatusesOpt = Trie.find(challengeStatuses, { key = caller; hash = Principal.hash(caller) }, Principal.equal);
+    switch (userStatusesOpt) {
       case (?userStatuses) {
-        Trie.find(userStatuses, { key = challengeId; hash = Hash.hash(challengeId) }, Nat.equal);
+        return Trie.find(userStatuses, { key = challengeId; hash = Hash.hash(challengeId) }, Nat.equal);
       };
-      case (null) { null };
+      case (null) { return null };
     };
   };
 
@@ -390,8 +367,7 @@ persistent actor {
   };
 
   // Set Apify Bearer Token (write-only, no getter for security)
-  public shared (msg) func setApifyBearerToken(token : Text) : async () {
-    let caller = msg.caller;
+  public shared ({ caller }) func setApifyBearerToken(token : Text) : async () {
     // TODO: Add authorization check - only allow admin/owner to set this
 
     apifyBearerToken := token;
@@ -399,8 +375,7 @@ persistent actor {
   };
 
   // Set Apify Cookies
-  public shared (msg) func setApifyCookies(cookies : Text) : async () {
-    let caller = msg.caller;
+  public shared ({ caller }) func setApifyCookies(cookies : Text) : async () {
     // TODO: Add authorization check - only allow admin/owner to set this
 
     apifyCookies := cookies;
@@ -431,12 +406,10 @@ persistent actor {
   };
 
   // Verify challenge by checking Twitter following relationship
-  public shared (msg) func verifyChallenge(challengeId : Nat) : async {
+  public shared ({ caller }) func verifyChallenge(challengeId : Nat) : async {
     #success : Bool;
     #error : Text;
   } {
-    let caller = msg.caller;
-
     // Check if challenge is already verified
     switch (await getChallengeStatus(challengeId)) {
       case (?#verified) {
@@ -446,66 +419,62 @@ persistent actor {
     };
 
     // Find the challenge
-    let challengeIndex = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id);
-    switch (challengeIndex) {
-      case (?index) {
-        let challenge = challenges[index];
+    let ?index = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }) }, challenges, func(a, b) = a.id == b.id) else {
+      return #error("Challenge not found");
+    };
+    let challenge = challenges[index];
 
-        // Set status to pending
-        setChallengeStatus(caller, challengeId, #pending);
+    // Set status to pending
+    setChallengeStatus(caller, challengeId, #pending);
 
-        // Check if it's a follows challenge
-        switch (challenge.challengeType) {
-          case (#follows(targetUser)) {
-            // Get user's Twitter data
-            switch (Trie.find(userDataStore, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
-              case (?cachedUser) {
-                if (isCacheValid(cachedUser)) {
-                  // Check if user has Twitter data
-                  switch (cachedUser.user.provider) {
-                    case (#x) {
-                      // User has Twitter/X account, proceed with verification
-                      let result = await verifyTwitterFollowing(caller, cachedUser.user.username, targetUser.user);
-                      switch (result) {
-                        case (#success(isFollowing)) {
-                          if (isFollowing) {
-                            setChallengeStatus(caller, challengeId, #verified);
-                            #success(true);
-                          } else {
-                            setChallengeStatus(caller, challengeId, #failed("Not following the required user"));
-                            #success(false);
-                          };
-                        };
-                        case (#error(err)) {
-                          setChallengeStatus(caller, challengeId, #failed(err));
-                          #error(err);
-                        };
-                      };
-                    };
-                    case (_) {
-                      setChallengeStatus(caller, challengeId, #failed("User does not have a Twitter/X account linked"));
-                      #error("User does not have a Twitter/X account linked");
-                    };
-                  };
-                } else {
-                  setChallengeStatus(caller, challengeId, #failed("User data is stale, please refresh your profile"));
-                  #error("User data is stale, please refresh your profile");
-                };
-              };
-              case (null) {
-                setChallengeStatus(caller, challengeId, #failed("No user data found, please sign in with Twitter/X"));
-                #error("No user data found, please sign in with Twitter/X");
-              };
-            };
-          };
-          case (_) {
-            setChallengeStatus(caller, challengeId, #failed("Unsupported challenge type"));
-            #error("Unsupported challenge type");
-          };
+    // Check if it's a follows challenge
+    let targetUser = switch (challenge.challengeType) {
+      case (#follows(user)) user;
+      case (_) {
+        setChallengeStatus(caller, challengeId, #failed("Unsupported challenge type"));
+        return #error("Unsupported challenge type");
+      };
+    };
+
+    // Get user's Twitter data
+    let ?cachedUser = Trie.find(userDataStore, { key = caller; hash = Principal.hash(caller) }, Principal.equal) else {
+      setChallengeStatus(caller, challengeId, #failed("No user data found, please sign in with Twitter/X"));
+      return #error("No user data found, please sign in with Twitter/X");
+    };
+
+    if (not isCacheValid(cachedUser)) {
+      setChallengeStatus(caller, challengeId, #failed("User data is stale, please refresh your profile"));
+      return #error("User data is stale, please refresh your profile");
+    };
+
+    // Check if user has Twitter data
+    switch (cachedUser.user.provider) {
+      case (#x) { /* continue */ };
+      case (_) {
+        setChallengeStatus(caller, challengeId, #failed("User does not have a Twitter/X account linked"));
+        return #error("User does not have a Twitter/X account linked");
+      };
+    };
+
+    // User has Twitter/X account, proceed with verification
+    Debug.print("User has valid Twitter/X account, starting following verification for challenge " # Nat.toText(challengeId));
+    let result = await verifyTwitterFollowing(caller, cachedUser.user.username, targetUser.user);
+    switch (result) {
+      case (#success(isFollowing)) {
+        if (isFollowing) {
+          Debug.print("Challenge " # Nat.toText(challengeId) # " verified successfully");
+          setChallengeStatus(caller, challengeId, #verified);
+          return #success(true);
+        } else {
+          Debug.print("Challenge " # Nat.toText(challengeId) # " failed: Not following the required user");
+          setChallengeStatus(caller, challengeId, #failed("Not following the required user"));
+          return #success(false);
         };
       };
-      case (null) {
-        #error("Challenge not found");
+      case (#error(err)) {
+        Debug.print("Challenge " # Nat.toText(challengeId) # " verification error: " # err);
+        setChallengeStatus(caller, challengeId, #failed(err));
+        return #error(err);
       };
     };
   };
@@ -515,20 +484,27 @@ persistent actor {
     #success : Bool;
     #error : Text;
   } {
+    Debug.print("Starting Twitter following verification for caller: " # Principal.toText(caller));
+
     // Check if source username is available
     let ?sourceUser = sourceUsername else {
+      Debug.print("Verification failed: Source user username not available");
       return #error("Source user username not available");
     };
 
+    Debug.print("Source username available: " # sourceUser);
+
     // Check if Apify token and cookies are set
     if (Text.size(apifyBearerToken) == 0) {
+      Debug.print("Verification failed: Apify API token not configured");
       return #error("Apify API token not configured");
     };
     if (Text.size(apifyCookies) == 0) {
+      Debug.print("Verification failed: Apify cookies not configured");
       return #error("Apify cookies not configured");
     };
 
-    Debug.print("Verifying Twitter following: " # sourceUser # " -> " # targetUsername);
+    Debug.print("Apify credentials configured, proceeding with verification: " # sourceUser # " -> " # targetUsername);
 
     // 1. SETUP ARGUMENTS FOR HTTP POST request to Apify
     let url = "https://api.apify.com/v2/acts/UC0t7r32caYf7tYgZ/runs?token=" # apifyBearerToken;
@@ -558,191 +534,269 @@ persistent actor {
     };
 
     // 2. MAKE HTTPS REQUEST AND WAIT FOR RESPONSE
+    Debug.print("Making HTTP request to Apify API for following check");
     let http_response : IC.http_request_result = await (with cycles = 200_000_000_000) IC.http_request(http_request);
+    Debug.print("HTTP request completed, status: " # Nat.toText(http_response.status));
 
     // 3. PROCESS THE RESPONSE
     let decoded_text : Text = switch (Text.decodeUtf8(http_response.body)) {
-      case (null) { return #error("Failed to decode response body") };
+      case (null) {
+        Debug.print("Verification failed: Failed to decode response body");
+        return #error("Failed to decode response body");
+      };
       case (?y) { y };
     };
 
-    Debug.print("Apify API response status: " # Nat.toText(http_response.status));
-    Debug.print("Apify API response: " # decoded_text);
+    Debug.print("Response decoded successfully, processing JSON");
 
     // 4. CHECK HTTP STATUS CODE
     if (http_response.status != 201) {
+      Debug.print("Verification failed: HTTP status " # Nat.toText(http_response.status));
       switch (http_response.status) {
         case (401) {
+          Debug.print("Authentication failed - check bearer token");
           return #error("Apify API authentication failed - check bearer token");
         };
-        case (403) { return #error("Apify API access forbidden") };
-        case (404) { return #error("Apify actor not found") };
-        case (429) { return #error("Apify API rate limit exceeded") };
+        case (403) {
+          Debug.print("Access forbidden");
+          return #error("Apify API access forbidden");
+        };
+        case (404) {
+          Debug.print("Actor not found");
+          return #error("Apify actor not found");
+        };
+        case (429) {
+          Debug.print("Rate limit exceeded");
+          return #error("Apify API rate limit exceeded");
+        };
         case (_) {
+          Debug.print("Unknown HTTP error");
           return #error("Apify API error: HTTP " # Nat.toText(http_response.status));
         };
       };
     };
 
+    Debug.print("HTTP status OK, parsing JSON response");
+  };
+
     // 5. PARSE JSON RESPONSE TO GET DATASET ID
     switch (Json.parse(decoded_text)) {
       case (#ok(json)) {
-        // Extract dataset ID from response
-        switch (Json.get(json, "data")) {
-          case (?dataJson) {
-            switch (Json.get(dataJson, "defaultDatasetId")) {
-              case (?#string(datasetId)) {
-                // Now query the dataset results
-                let result = await getApifyDatasetResults(datasetId);
-                switch (result) {
-                  case (#success(isFollowing)) {
-                    Debug.print("Verification result: " # sourceUser # " following " # targetUsername # " = " # (if (isFollowing) "true" else "false"));
-                    #success(isFollowing);
-                  };
-                  case (#error(err)) {
-                    #error(err);
-                  };
-                };
+        switch (Json.get(json, "data.defaultDatasetId")) {
+          case (?#string(datasetId)) {
+            let result = await getApifyDatasetResults(datasetId);
+            switch (result) {
+              case (#success(isFollowing)) {
+                Debug.print("Verification successful: " # sourceUser # " following " # targetUsername # " = " # (if (isFollowing) "true" else "false"));
+                return #success(isFollowing);
               };
-              case (_) {
-                #error("Failed to extract dataset ID from Apify response");
+              case (#error(err)) {
+                Debug.print("Verification failed in dataset results: " # err);
+                return #error(err);
               };
             };
           };
           case (_) {
-            #error("No data field in Apify response");
-          };
-        };
-      };
-      case (#err(error)) {
-        Debug.print("JSON parsing error: " # debug_show(error));
-        #error("Failed to parse Apify API response");
-      };
-    };
-  };
-
-  // Helper function to get Apify dataset results
-  private func getApifyDatasetResults(datasetId : Text) : async {
-    #success : Bool;
-    #error : Text;
-  } {
-    let url = "https://api.apify.com/v2/datasets/" # datasetId # "/items?token=" # apifyBearerToken;
-
-    let request_headers = [
-      { name = "Content-Type"; value = "application/json" },
-    ];
-
-    let http_request : IC.http_request_args = {
-      url = url;
-      max_response_bytes = ?(1024 * 1024);
-      headers = request_headers;
-      body = null;
-      method = #get;
-      transform = ?{
-        function = transform;
-        context = Blob.fromArray([]);
-      };
-      is_replicated = ?false;
-    };
-
-    let http_response : IC.http_request_result = await (with cycles = 100_000_000_000) IC.http_request(http_request);
-
-    let decoded_text : Text = switch (Text.decodeUtf8(http_response.body)) {
-      case (null) { return #error("Failed to decode dataset response") };
-      case (?y) { y };
-    };
-
-    if (http_response.status != 200) {
-      return #error("Failed to get dataset results: HTTP " # Nat.toText(http_response.status));
-    };
-
-    // Parse the dataset results
-    switch (Json.parse(decoded_text)) {
-      case (#ok(json)) {
-        // The response should be an array of items directly
-        switch (json) {
-          case (#array(items)) {
-            if (items.size() > 0) {
-              switch (Json.get(items[0], "isFollowing")) {
-                case (?#bool(isFollowing)) {
-                  #success(isFollowing);
-                };
-                case (_) {
-                  #error("isFollowing field not found in dataset item");
-                };
-              };
-            } else {
-              #error("No items in dataset results");
-            };
-          };
-          case (_) {
-            #error("Dataset response is not an array");
+            Debug.print("Failed to extract dataset ID from Apify response");
+            return #error("Failed to extract dataset ID from Apify response");
           };
         };
       };
       case (#err(_)) {
-        #error("Failed to parse dataset JSON");
+        Debug.print("Verification failed: Failed to parse Apify API response");
+        return #error("Failed to parse Apify API response");
       };
     };
   };
 
-  // Store followers data from Twitter API response
-  private func storeFollowersData(targetUserId : Text, json : Json.Json) : () {
-    // Extract followers from the JSON response
-    // Twitter API response format: {"data": [{"id": "123", "username": "user"}, ...], ...}
-    switch (Json.get(json, "data")) {
-      case (?followersJson) {
-        switch (followersJson) {
-          case (#array(followers)) {
-            // Extract follower IDs
-            var followerIds : [Text] = [];
-            for (follower in followers.vals()) {
-              switch (Json.get(follower, "id")) {
-                case (?#string(id)) {
-                  followerIds := Array.append(followerIds, [id]);
-                };
-                case (_) { /* Skip invalid entries */ };
-              };
-            };
+  let result = await getApifyDatasetResults(datasetId);
+  switch (result) {
+    case (#success(isFollowing)) {
+      Debug.print("Verification result: " # sourceUser # " following " # targetUsername # " = " # (if (isFollowing) "true" else "false"));
+      return #success(isFollowing);
+    };
+    case (#error(err)) {
+      return #error(err);
+    };
+  };
+};
+case (#err(_)) {
+  Debug.print("Verification failed: Failed to parse Apify API response");
+  return #error("Failed to parse Apify API response");
+};
+};
+};
 
-            // Store in cache (simple array approach)
-            // Remove existing entry if it exists
-            followersCache := Array.filter<(Text, [Text])>(followersCache, func((userId, _)) { userId != targetUserId });
-            // Add new entry
-            followersCache := Array.append(followersCache, [(targetUserId, followerIds)]);
+let datasetId = switch (Json.get(json, "data.defaultDatasetId")) {
+  case (?#string(datasetId)) datasetId;
+  case (_) {
+    Debug.print("Verification failed: Failed to extract dataset ID from Apify response");
+    return #error("Failed to extract dataset ID from Apify response");
+  };
+};
 
-            Debug.print("Stored " # Nat.toText(followerIds.size()) # " followers for user " # targetUserId);
-          };
-          case (_) {
-            Debug.print("No followers data found in response");
-          };
+Debug.print("Dataset ID extracted: " # datasetId # ", fetching results");
+let result = await getApifyDatasetResults(datasetId);
+switch (result) {
+  case (#success(isFollowing)) {
+    Debug.print("Verification successful: " # sourceUser # " following " # targetUsername # " = " # (if (isFollowing) "true" else "false"));
+    return #success(isFollowing);
+  };
+  case (#error(err)) {
+    Debug.print("Verification failed in dataset results: " # err);
+    return #error(err);
+  };
+};
+};
+
+// Helper function to get Apify dataset results
+private func getApifyDatasetResults(datasetId : Text) : async {
+  #success : Bool;
+  #error : Text;
+} {
+  Debug.print("Fetching dataset results for ID: " # datasetId);
+  let url = "https://api.apify.com/v2/datasets/" # datasetId # "/items?token=" # apifyBearerToken;
+
+  let request_headers = [
+    { name = "Content-Type"; value = "application/json" },
+  ];
+
+  let http_request : IC.http_request_args = {
+    url = url;
+    max_response_bytes = ?(1024 * 1024);
+    headers = request_headers;
+    body = null;
+    method = #get;
+    transform = ?{
+      function = transform;
+      context = Blob.fromArray([]);
+    };
+    is_replicated = ?false;
+  };
+
+  Debug.print("Making HTTP GET request for dataset results");
+  let http_response : IC.http_request_result = await (with cycles = 100_000_000_000) IC.http_request(http_request);
+  Debug.print("Dataset HTTP request completed, status: " # Nat.toText(http_response.status));
+
+  let decoded_text : Text = switch (Text.decodeUtf8(http_response.body)) {
+    case (null) {
+      Debug.print("Dataset fetch failed: Failed to decode response body");
+      return #error("Failed to decode dataset response");
+    };
+    case (?y) { y };
+  };
+
+  if (http_response.status != 200) {
+    Debug.print("Dataset fetch failed: HTTP " # Nat.toText(http_response.status));
+    return #error("Failed to get dataset results: HTTP " # Nat.toText(http_response.status));
+  };
+
+  Debug.print("Dataset response decoded, parsing JSON");
+  // Parse the dataset results
+  switch (Json.parse(decoded_text)) {
+    case (#ok(json)) {
+      switch (Json.get(json, "[0].isFollowing")) {
+        case (?#bool(isFollowing)) {
+          Debug.print("Dataset parsed successfully, isFollowing: " # (if (isFollowing) "true" else "false"));
+          return #success(isFollowing);
+        };
+        case (_) {
+          Debug.print("Dataset fetch failed: isFollowing field not found");
+          return #error("isFollowing field not found in dataset item");
         };
       };
-      case (null) {
-        Debug.print("No data field in Twitter API response");
+    };
+    case (#err(_)) {
+      Debug.print("Dataset fetch failed: Failed to parse dataset JSON");
+      return #error("Failed to parse dataset JSON");
+    };
+  };
+};
+is_replicated = ?false;
+};
+
+let http_response : IC.http_request_result = await (with cycles = 100_000_000_000) IC.http_request(http_request);
+
+let decoded_text : Text = switch (Text.decodeUtf8(http_response.body)) {
+  case (null) { return #error("Failed to decode dataset response") };
+  case (?y) { y };
+};
+
+if (http_response.status != 200) {
+  return #error("Failed to get dataset results: HTTP " # Nat.toText(http_response.status));
+};
+
+// Parse the dataset results
+switch (Json.parse(decoded_text)) {
+  case (#ok(json)) {
+    switch (Json.get(json, "[0].isFollowing")) {
+      case (?#bool(isFollowing)) {
+        return #success(isFollowing);
+      };
+      case (_) {
+        return #error("isFollowing field not found in dataset item");
       };
     };
   };
+  case (#err(_)) {
+    return #error("Failed to parse dataset JSON");
+  };
+};
+};
 
-  // Check if a user follows another user using cached data
-  private func checkIfUserFollows(sourceUserId : Text, targetUserId : Text) : Bool {
-    // Find the target user in the cache
-    for ((userId, followerIds) in followersCache.vals()) {
-      if (userId == targetUserId) {
-        // Check if sourceUserId is in the followers list
-        for (followerId in followerIds.vals()) {
-          if (followerId == sourceUserId) {
-            return true;
-          };
+// Store followers data from Twitter API response
+private func storeFollowersData(targetUserId : Text, json : Json.Json) : () {
+  // Extract followers from the JSON response
+  // Twitter API response format: {"data": [{"id": "123", "username": "user"}, ...], ...}
+  let ?followersJson = Json.get(json, "data") else {
+    Debug.print("No data field in Twitter API response");
+    return;
+  };
+
+  let #array(followers) = followersJson else {
+    Debug.print("No followers data found in response");
+    return;
+  };
+
+  // Extract follower IDs
+  var followerIds : [Text] = [];
+  for (follower in followers.vals()) {
+    switch (Json.get(follower, "id")) {
+      case (?#string(id)) {
+        followerIds := Array.append(followerIds, [id]);
+      };
+      case (_) { /* Skip invalid entries */ };
+    };
+  };
+
+  // Store in cache (simple array approach)
+  // Remove existing entry if it exists
+  followersCache := Array.filter<(Text, [Text])>(followersCache, func((userId, _)) { userId != targetUserId });
+  // Add new entry
+  followersCache := Array.append(followersCache, [(targetUserId, followerIds)]);
+
+  Debug.print("Stored " # Nat.toText(followerIds.size()) # " followers for user " # targetUserId);
+};
+
+// Check if a user follows another user using cached data
+private func checkIfUserFollows(sourceUserId : Text, targetUserId : Text) : Bool {
+  // Find the target user in the cache
+  for ((userId, followerIds) in followersCache.vals()) {
+    if (userId == targetUserId) {
+      // Check if sourceUserId is in the followers list
+      for (followerId in followerIds.vals()) {
+        if (followerId == sourceUserId) {
+          return true;
         };
-        return false;
       };
+      return false;
     };
-    Debug.print("No cached followers data for user " # targetUserId);
-    false;
   };
+  Debug.print("No cached followers data for user " # targetUserId);
+  false;
+};
 
-  public query func greet(name : Text) : async Text {
-    return "Hello, " # name # "!";
-  };
+public query func greet(name : Text) : async Text {
+  return "Hello, " # name # "!";
+};
 };
