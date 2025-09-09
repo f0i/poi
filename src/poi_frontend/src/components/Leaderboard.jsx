@@ -13,29 +13,45 @@ function Leaderboard() {
   const challengeService = new ChallengeService(identity);
 
   useEffect(() => {
+    console.log('🔍 DEBUG Leaderboard: useEffect triggered', { isAuthenticated, hasUserPoints: !!userPoints });
     if (isAuthenticated) {
       loadLeaderboard();
       // Load points if we don't have them yet
       if (!userPoints) {
+        console.log('🔍 DEBUG Leaderboard: No user points, calling getPoints()');
         getPoints();
+      } else {
+        console.log('🔍 DEBUG Leaderboard: User points already available', userPoints);
       }
     }
   }, [isAuthenticated, userPoints]);
 
   const loadLeaderboard = async () => {
+    console.log('🔍 DEBUG Leaderboard: loadLeaderboard called');
     setLoading(true);
     try {
+      console.log('🔍 DEBUG Leaderboard: Calling getLeaderboard()...');
       const result = await challengeService.getLeaderboard();
-      setLeaderboard(result);
+      console.log('🔍 DEBUG Leaderboard: getLeaderboard() returned', result.length, 'users');
 
-      // Find current user's rank
+      // Find current user's data in leaderboard
       const userPrincipal = identity?.getPrincipal().toString();
+      console.log('🔍 DEBUG Leaderboard: Current user principal:', userPrincipal);
+
+      const userInLeaderboard = result.find(user =>
+        user.principal.toString() === userPrincipal
+      );
+      console.log('🔍 DEBUG Leaderboard: User in leaderboard:', userInLeaderboard);
+
       const rank = result.findIndex(user =>
         user.principal.toString() === userPrincipal
       );
       setUserRank(rank >= 0 ? rank + 1 : null);
+      console.log('🔍 DEBUG Leaderboard: User rank:', rank >= 0 ? rank + 1 : null);
+
+      setLeaderboard(result);
     } catch (error) {
-      console.error('Failed to load leaderboard:', error);
+      console.error('🔍 DEBUG Leaderboard: Failed to load leaderboard:', error);
     } finally {
       setLoading(false);
     }
@@ -100,13 +116,14 @@ function Leaderboard() {
       {/* User Stats Card */}
       {userPoints && (
         <div className="card">
-           <div className="flex items-center justify-between mb-6">
-             <h3 className="text-xl font-bold text-white flex items-center">
-               <svg className="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-               </svg>
-               Your Stats
-             </h3>
+            {console.log('🔍 DEBUG Leaderboard: Rendering user stats with points:', userPoints)}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white flex items-center">
+                <svg className="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Your Stats
+              </h3>
              <button
                onClick={() => getPoints(true)}
                className="btn-secondary text-sm px-3 py-1"
@@ -127,26 +144,26 @@ function Leaderboard() {
               <p className="text-slate-400 text-sm">Current Rank</p>
             </div>
 
-            <div className="bg-slate-700 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-green-400 mb-1">
-                {formatNumber(userPoints.totalPoints)}
-              </div>
-              <p className="text-slate-400 text-sm">Total Points</p>
-            </div>
+             <div className="bg-slate-700 rounded-lg p-4 text-center">
+               <div className="text-2xl font-bold text-green-400 mb-1">
+                 {console.log('🔍 DEBUG Leaderboard: Rendering total points:', userPoints.totalPoints) || formatNumber(userPoints.totalPoints)}
+               </div>
+               <p className="text-slate-400 text-sm">Total Points</p>
+             </div>
 
-            <div className="bg-slate-700 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-purple-400 mb-1">
-                {formatNumber(userPoints.challengePoints)}
-              </div>
-              <p className="text-slate-400 text-sm">Challenge Points</p>
-            </div>
+             <div className="bg-slate-700 rounded-lg p-4 text-center">
+               <div className="text-2xl font-bold text-purple-400 mb-1">
+                 {console.log('🔍 DEBUG Leaderboard: Rendering challenge points:', userPoints.challengePoints) || formatNumber(userPoints.challengePoints)}
+               </div>
+               <p className="text-slate-400 text-sm">Challenge Points</p>
+             </div>
 
-            <div className="bg-slate-700 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-orange-400 mb-1">
-                {formatNumber(userPoints.followerPoints)}
-              </div>
-              <p className="text-slate-400 text-sm">Follower Points</p>
-            </div>
+             <div className="bg-slate-700 rounded-lg p-4 text-center">
+               <div className="text-2xl font-bold text-orange-400 mb-1">
+                 {console.log('🔍 DEBUG Leaderboard: Rendering follower points:', userPoints.followerPoints) || formatNumber(userPoints.followerPoints)}
+               </div>
+               <p className="text-slate-400 text-sm">Follower Points</p>
+             </div>
           </div>
 
 

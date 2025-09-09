@@ -169,12 +169,22 @@ export class ChallengeService {
     followerPoints: bigint;
     totalPoints: bigint;
   }> {
+    console.log('🔍 DEBUG ChallengeService: getUserPoints called');
     try {
+      console.log('🔍 DEBUG ChallengeService: Getting actor...');
       const actor = this.getActor();
+      console.log('🔍 DEBUG ChallengeService: Calling actor.getUserPoints()...');
       const result = await actor.getUserPoints();
+      console.log('🔍 DEBUG ChallengeService: actor.getUserPoints() returned:', result);
       return result;
     } catch (error) {
-      console.error("Failed to get user points:", error);
+      console.error('🔍 DEBUG ChallengeService: Failed to get user points:', error);
+      const err = error as Error;
+      console.error('🔍 DEBUG ChallengeService: Error details:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name
+      });
       return {
         challengePoints: 0n,
         followerPoints: 0n,
