@@ -580,6 +580,135 @@ persistent actor {
     };
   };
 
+  // Admin function to get comprehensive system data for debugging
+  public query ({ caller }) func getSystemData() : async {
+    challenges : [{
+      id : Nat;
+      description : Text;
+      challengeType : ChallengeType;
+      points : Nat;
+    }];
+    users : [{
+      principal : Principal;
+      username : ?Text;
+      name : ?Text;
+      provider : Provider;
+      followersCount : ?Nat;
+      cacheValid : Bool;
+      challengePoints : Nat;
+      followerPoints : Nat;
+      totalPoints : Nat;
+      completedChallenges : [{
+        challengeId : Nat;
+        status : ChallengeStatus;
+        points : Nat;
+      }];
+    }];
+  } {
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can access system data");
+    };
+
+    // Get all challenges
+    let allChallenges = challenges;
+
+    // Get all users and their data
+    var usersData : [{
+      principal : Principal;
+      username : ?Text;
+      name : ?Text;
+      provider : Provider;
+      followersCount : ?Nat;
+      cacheValid : Bool;
+      challengePoints : Nat;
+      followerPoints : Nat;
+      totalPoints : Nat;
+      completedChallenges : [{
+        challengeId : Nat;
+        status : ChallengeStatus;
+        points : Nat;
+      }];
+    }] = [];
+
+    // Iterate through all users with stored points
+    for ((principal, _) in Trie.iter(userPoints)) {
+      // Get user data
+      let userInfo = switch (Trie.find(userDataStore, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
+        case (?cachedUser) {
+          {
+            username = cachedUser.user.username;
+            name = cachedUser.user.name;
+            provider = cachedUser.user.provider;
+            followersCount = cachedUser.user.followers_count;
+            cacheValid = isCacheValid(cachedUser);
+          };
+        };
+        case (null) {
+          {
+            username = null;
+            name = null;
+            provider = #github; // default
+            followersCount = null;
+            cacheValid = false;
+          };
+        };
+      };
+
+      // Calculate points
+      let calculatedPoints = calculateUserPoints(principal);
+
+      // Get completed challenges
+      var completedChallenges : [{
+        challengeId : Nat;
+        status : ChallengeStatus;
+        points : Nat;
+      }] = [];
+
+      let userStatusesOpt = Trie.find(challengeStatuses, { key = principal; hash = Principal.hash(principal) }, Principal.equal);
+      switch (userStatusesOpt) {
+        case (?userStatuses) {
+          for ((challengeId, status) in Trie.iter(userStatuses)) {
+            // Find challenge points
+            let challengePoints = switch (Array.indexOf<Challenge>(
+              { id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0 },
+              challenges,
+              func(a, b) = a.id == b.id
+            )) {
+              case (?idx) { challenges[idx].points };
+              case (null) { 0 };
+            };
+
+            completedChallenges := Array.append(completedChallenges, [{
+              challengeId = challengeId;
+              status = status;
+              points = challengePoints;
+            }]);
+          };
+        };
+        case (null) { /* No completed challenges */ };
+      };
+
+      usersData := Array.append(usersData, [{
+        principal = principal;
+        username = userInfo.username;
+        name = userInfo.name;
+        provider = userInfo.provider;
+        followersCount = userInfo.followersCount;
+        cacheValid = userInfo.cacheValid;
+        challengePoints = calculatedPoints.challengePoints;
+        followerPoints = calculatedPoints.followerPoints;
+        totalPoints = calculatedPoints.totalPoints;
+        completedChallenges = completedChallenges;
+      }]);
+    };
+
+    return {
+      challenges = allChallenges;
+      users = usersData;
+    };
+  };
+
   // Check if caller is admin
   private func isCallerAdmin(caller : Principal) : Bool {
     switch (admin) {

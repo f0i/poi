@@ -17,6 +17,8 @@ function Settings() {
   const [settingAdmin, setSettingAdmin] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
   const [recalcResult, setRecalcResult] = useState(null);
+  const [systemData, setSystemData] = useState(null);
+  const [loadingSystemData, setLoadingSystemData] = useState(false);
 
   const challengeService = new ChallengeService(identity);
 
@@ -92,6 +94,20 @@ function Settings() {
       } finally {
         setRecalculating(false);
       }
+    }
+  };
+
+  const handleLoadSystemData = async () => {
+    setLoadingSystemData(true);
+    try {
+      const data = await challengeService.getSystemData();
+      setSystemData(data);
+      console.log('System data loaded:', data);
+    } catch (error) {
+      console.error('Failed to load system data:', error);
+      alert('Failed to load system data. Check console for details.');
+    } finally {
+      setLoadingSystemData(false);
     }
   };
 
@@ -247,6 +263,104 @@ function Settings() {
                        </div>
                      </div>
                    )}
+
+                   <div className="border-t border-slate-600 pt-4 mt-4">
+                     <h6 className="text-white font-medium mb-3 flex items-center">
+                       <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                       </svg>
+                       System Diagnostics
+                     </h6>
+                     <div className="space-y-3">
+                       <p className="text-slate-400 text-sm">
+                         Load comprehensive system data including all challenges, users, and completion status for debugging.
+                       </p>
+                       <button
+                         onClick={handleLoadSystemData}
+                         disabled={loadingSystemData}
+                         className="btn-primary text-sm"
+                       >
+                         {loadingSystemData ? (
+                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                         ) : (
+                           <>
+                             <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                             </svg>
+                             Load System Data
+                           </>
+                         )}
+                       </button>
+
+                       {systemData && (
+                         <div className="bg-slate-600 rounded-lg p-4 border border-slate-500 max-h-96 overflow-y-auto">
+                           <h6 className="text-white font-medium mb-3">System Data Overview</h6>
+
+                           <div className="space-y-4">
+                             <div>
+                               <h6 className="text-blue-400 font-medium mb-2">Challenges ({systemData.challenges.length})</h6>
+                               <div className="space-y-1">
+                                 {systemData.challenges.map((challenge, index) => (
+                                   <div key={index} className="text-slate-300 text-sm bg-slate-700 rounded p-2">
+                                     <strong>ID {Number(challenge.id)}:</strong> {challenge.description} ({Number(challenge.points)} pts)
+                                   </div>
+                                 ))}
+                               </div>
+                             </div>
+
+                             <div>
+                               <h6 className="text-green-400 font-medium mb-2">Users ({systemData.users.length})</h6>
+                               <div className="space-y-2">
+                                 {systemData.users.map((user, index) => (
+                                   <div key={index} className="text-slate-300 text-sm bg-slate-700 rounded p-3">
+                                     <div className="flex justify-between items-start mb-2">
+                                       <div>
+                                         <strong>{user.name || 'Anonymous'}</strong>
+                                         {user.username && <span className="text-slate-400"> (@{user.username})</span>}
+                                       </div>
+                                       <div className="text-right">
+                                         <div className="text-green-400 font-medium">{Number(user.totalPoints)} pts</div>
+                                         <div className="text-xs text-slate-400">
+                                           {Number(user.challengePoints)} + {Number(user.followerPoints)}
+                                         </div>
+                                       </div>
+                                     </div>
+
+                                     <div className="text-xs text-slate-400 mb-2">
+                                       Principal: {user.principal.toString().slice(0, 20)}...
+                                       <br />
+                                       Provider: {user.provider} | Cache: {user.cacheValid ? 'Valid' : 'Invalid'}
+                                       {user.followersCount && <span> | Followers: {Number(user.followersCount)}</span>}
+                                     </div>
+
+                                     {user.completedChallenges.length > 0 && (
+                                       <div className="mt-2">
+                                         <div className="text-xs text-slate-400 mb-1">Completed Challenges:</div>
+                                         <div className="flex flex-wrap gap-1">
+                                           {user.completedChallenges.map((challenge, idx) => (
+                                             <span
+                                               key={idx}
+                                               className={`text-xs px-2 py-1 rounded ${
+                                                 challenge.status.verified ? 'bg-green-600 text-white' :
+                                                 challenge.status.pending ? 'bg-yellow-600 text-white' :
+                                                 'bg-red-600 text-white'
+                                               }`}
+                                             >
+                                               #{Number(challenge.challengeId)} ({Number(challenge.points)}pts)
+                                             </span>
+                                           ))}
+                                         </div>
+                                       </div>
+                                     )}
+                                   </div>
+                                 ))}
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       )}
+                     </div>
+                   </div>
                  </div>
                </div>
              )}

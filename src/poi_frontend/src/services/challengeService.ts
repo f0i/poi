@@ -234,6 +234,40 @@ export class ChallengeService {
     }
   }
 
+  async getSystemData(): Promise<{
+    challenges: Array<{
+      id: bigint;
+      description: string;
+      challengeType: { follows: { user: string } };
+      points: bigint;
+    }>;
+    users: Array<{
+      principal: any;
+      username: string | null;
+      name: string | null;
+      provider: string;
+      followersCount: bigint | null;
+      cacheValid: boolean;
+      challengePoints: bigint;
+      followerPoints: bigint;
+      totalPoints: bigint;
+      completedChallenges: Array<{
+        challengeId: bigint;
+        status: { verified: null } | { pending: null } | { failed: string };
+        points: bigint;
+      }>;
+    }>;
+  }> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.getSystemData();
+      return result;
+    } catch (error) {
+      console.error("Failed to get system data:", error);
+      throw error;
+    }
+  }
+
   async recalculateAllUserPoints(): Promise<{
     usersProcessed: bigint;
     totalPointsUpdated: bigint;
