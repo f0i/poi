@@ -1,5 +1,5 @@
 import { useAuth } from '../AuthContext';
-import { ChallengeService } from '../services/challengeService';
+import { usePoints } from '../PointsContext';
 import { useState, useEffect } from 'react';
 
 function UserProfile() {
@@ -11,25 +11,18 @@ function UserProfile() {
     logout,
   } = useAuth();
 
+  const { points: userPoints, getPoints } = usePoints();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [userPoints, setUserPoints] = useState(null);
-  const challengeService = new ChallengeService(identity);
 
   useEffect(() => {
     if (isAuthenticated) {
       checkAdminStatus();
-      loadUserPoints();
+      // Load points if we don't have them yet
+      if (!userPoints) {
+        getPoints();
+      }
     }
-  }, [isAuthenticated]);
-
-  const loadUserPoints = async () => {
-    try {
-      const points = await challengeService.getUserPoints();
-      setUserPoints(points);
-    } catch (error) {
-      console.error('Failed to load user points:', error);
-    }
-  };
+  }, [isAuthenticated, userPoints]);
 
   const formatNumber = (num) => {
     return new Intl.NumberFormat().format(Number(num));
@@ -37,6 +30,9 @@ function UserProfile() {
 
   const checkAdminStatus = async () => {
     try {
+      // We need to create a temporary service instance for admin check
+      const { ChallengeService } = await import('../services/challengeService');
+      const challengeService = new ChallengeService(identity);
       const admin = await challengeService.getAdmin();
       if (admin && identity) {
         setIsAdmin(admin.toString() === identity.getPrincipal().toString());
@@ -159,12 +155,24 @@ function UserProfile() {
            {/* Points Stats */}
            {userPoints && (
              <div className="mt-6 pt-4 border-t border-slate-700">
-               <h4 className="text-md font-semibold text-white mb-4 flex items-center">
-                 <svg className="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                 </svg>
-                 Your Points
-               </h4>
+               <div className="flex items-center justify-between mb-4">
+                 <h4 className="text-md font-semibold text-white flex items-center">
+                   <svg className="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                   </svg>
+                   Your Points
+                 </h4>
+                 <button
+                   onClick={() => getPoints(true)}
+                   className="btn-secondary text-sm px-3 py-1"
+                   title="Refresh points from Twitter/X"
+                 >
+                   <svg className="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                   </svg>
+                   Refresh
+                 </button>
+               </div>
 
                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                  <div className="bg-slate-700 rounded-lg p-4 text-center">

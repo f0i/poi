@@ -1,5 +1,6 @@
 import React from 'react';
 import { AuthProvider, useAuth } from "./AuthContext";
+import { PointsProvider } from "./PointsContext";
 import Leaderboard from "./components/Leaderboard";
 import ChallengeList from "./components/ChallengeList";
 import UserProfile from "./components/UserProfile";
@@ -100,7 +101,9 @@ function AuthApp() {
 function App() {
   return (
     <AuthProvider>
-      <AuthApp />
+      <PointsProvider>
+        <AuthApp />
+      </PointsProvider>
     </AuthProvider>
   );
 }

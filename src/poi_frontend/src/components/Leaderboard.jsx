@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../AuthContext';
+import { usePoints } from '../PointsContext';
 import { ChallengeService } from '../services/challengeService';
+import { useState, useEffect } from 'react';
 
 function Leaderboard() {
   const { isAuthenticated, identity } = useAuth();
+  const { points: userPoints, getPoints } = usePoints();
   const [leaderboard, setLeaderboard] = useState([]);
-  const [userPoints, setUserPoints] = useState(null);
   const [loading, setLoading] = useState(false);
   const [userRank, setUserRank] = useState(null);
 
@@ -14,9 +16,12 @@ function Leaderboard() {
   useEffect(() => {
     if (isAuthenticated) {
       loadLeaderboard();
-      loadFreshUserPoints();
+      // Load points if we don't have them yet
+      if (!userPoints) {
+        getPoints();
+      }
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, userPoints]);
 
   const loadLeaderboard = async () => {
     setLoading(true);
@@ -37,22 +42,7 @@ function Leaderboard() {
     }
   };
 
-  const loadFreshUserPoints = async () => {
-    try {
-      // Use refresh to get fresh data from external canister instead of cached data
-      const points = await challengeService.refreshUserPoints('twitter');
-      setUserPoints(points);
-    } catch (error) {
-      console.error('Failed to load fresh user points:', error);
-      // Fallback to cached data if refresh fails
-      try {
-        const cachedPoints = await challengeService.getUserPoints();
-        setUserPoints(cachedPoints);
-      } catch (fallbackError) {
-        console.error('Failed to load cached user points:', fallbackError);
-      }
-    }
-  };
+
 
 
 
@@ -111,12 +101,24 @@ function Leaderboard() {
       {/* User Stats Card */}
       {userPoints && (
         <div className="card">
-          <h3 className="text-xl font-bold text-white mb-6 flex items-center">
-            <svg className="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            Your Stats
-          </h3>
+           <div className="flex items-center justify-between mb-6">
+             <h3 className="text-xl font-bold text-white flex items-center">
+               <svg className="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+               </svg>
+               Your Stats
+             </h3>
+             <button
+               onClick={() => getPoints(true)}
+               className="btn-secondary text-sm px-3 py-1"
+               title="Refresh points from Twitter/X"
+             >
+               <svg className="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+               </svg>
+               Refresh
+             </button>
+           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-slate-700 rounded-lg p-4 text-center">
