@@ -15,14 +15,30 @@ function ChallengeList() {
   const [verifyingChallenge, setVerifyingChallenge] = useState(null);
   const [verificationResults, setVerificationResults] = useState({});
   const [challengeStatuses, setChallengeStatuses] = useState({});
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const challengeService = new ChallengeService(identity);
 
   useEffect(() => {
     if (isAuthenticated) {
       loadChallenges();
+      checkAdminStatus();
     }
   }, [isAuthenticated]);
+
+  const checkAdminStatus = async () => {
+    try {
+      const admin = await challengeService.getAdmin();
+      if (admin && identity) {
+        setIsAdmin(admin.toString() === identity.getPrincipal().toString());
+      } else {
+        setIsAdmin(false);
+      }
+    } catch (error) {
+      console.error('Failed to check admin status:', error);
+      setIsAdmin(false);
+    }
+  };
 
   const loadChallenges = async () => {
     setLoading(true);
@@ -120,10 +136,11 @@ function ChallengeList() {
           </svg>
           Challenges
         </h3>
-        <button
-          onClick={() => setShowCreateForm(!showCreateForm)}
-          className={showCreateForm ? "btn-secondary" : "btn-primary"}
-        >
+        {isAdmin && (
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className={showCreateForm ? "btn-secondary" : "btn-primary"}
+          >
           {showCreateForm ? (
             <>
               <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -140,9 +157,10 @@ function ChallengeList() {
             </>
           )}
         </button>
+        )}
       </div>
 
-      {showCreateForm && (
+      {showCreateForm && isAdmin && (
         <form onSubmit={handleCreateChallenge} className="bg-slate-700 rounded-lg p-6 mb-6 border border-slate-600">
           <h4 className="text-lg font-semibold text-white mb-4">Create New Challenge</h4>
 
@@ -311,13 +329,48 @@ function ChallengeList() {
                                    Failed
                                  </span>
                                ) : null}
-                             </div>
-                           )}
-                         </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
                       </div>
 
-                      {/* Verification Result */}
-                      {verificationResults[challenge.id] && (
+                       {/* Admin Actions */}
+                       {isAdmin && (
+                         <div className="flex space-x-2 ml-4 flex-shrink-0">
+                           <button
+                             onClick={() => handleVerifyChallenge(challenge.id)}
+                             disabled={verifyingChallenge === challenge.id}
+                             className="btn-primary text-sm px-3 py-1"
+                             title="Verify challenge"
+                           >
+                             {verifyingChallenge === challenge.id ? (
+                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                             ) : (
+                               <>
+                                 <svg className="w-4 h-4 mr-1 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                 </svg>
+                                 Verify
+                               </>
+                             )}
+                           </button>
+
+                           <button
+                             onClick={() => handleDeleteChallenge(challenge.id)}
+                             className="btn-danger text-sm px-3 py-1"
+                             title="Delete challenge"
+                           >
+                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                             </svg>
+                           </button>
+                         </div>
+                       )}
+
+                       {/* Verification Result */}
+                       {verificationResults[challenge.id] && (
                         <div className="mt-3 p-3 rounded-lg border">
                           {verificationResults[challenge.id].success !== undefined ? (
                             verificationResults[challenge.id].success ? (

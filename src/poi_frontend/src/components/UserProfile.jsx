@@ -1,4 +1,6 @@
 import { useAuth } from '../AuthContext';
+import { ChallengeService } from '../services/challengeService';
+import { useState, useEffect } from 'react';
 
 function UserProfile() {
   const {
@@ -8,6 +10,29 @@ function UserProfile() {
     userDataLoading,
     logout,
   } = useAuth();
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  const challengeService = new ChallengeService(identity);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkAdminStatus();
+    }
+  }, [isAuthenticated]);
+
+  const checkAdminStatus = async () => {
+    try {
+      const admin = await challengeService.getAdmin();
+      if (admin && identity) {
+        setIsAdmin(admin.toString() === identity.getPrincipal().toString());
+      } else {
+        setIsAdmin(false);
+      }
+    } catch (error) {
+      console.error('Failed to check admin status:', error);
+      setIsAdmin(false);
+    }
+  };
 
   if (!isAuthenticated) {
     return null;
@@ -87,6 +112,13 @@ function UserProfile() {
               <span className="text-slate-400 text-sm">Provider</span>
               <span className="text-white font-medium capitalize">
                 {Object.keys(userData.provider)[0]}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center py-2">
+              <span className="text-slate-400 text-sm">Admin Status</span>
+              <span className={`font-medium ${isAdmin ? 'text-green-400' : 'text-slate-400'}`}>
+                {isAdmin ? 'Administrator' : 'Regular User'}
               </span>
             </div>
 

@@ -200,5 +200,26 @@ export class ChallengeService {
       return [];
     }
   }
+
+  async getAdmin(): Promise<any | null> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.getAdmin();
+      return result.length > 0 ? result[0] : null;
+    } catch (error) {
+      console.error("Failed to get admin:", error);
+      return null;
+    }
+  }
+
+  async setAdmin(): Promise<void> {
+    try {
+      const actor = this.getActor();
+      await actor.setAdmin();
+    } catch (error) {
+      console.error("Failed to set admin:", error);
+      throw error;
+    }
+  }
 }
 
