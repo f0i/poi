@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { AuthClient } from "@dfinity/auth-client";
 import { UserDataService } from "./services/userDataService";
+import { ChallengeService } from "./services/challengeService";
 
 const AuthContext = createContext();
 
@@ -71,6 +72,15 @@ export const AuthProvider = ({ children }) => {
           const userIdentity = authClient.getIdentity();
           setIdentity(userIdentity);
           await fetchUserData(userIdentity);
+
+          // Automatically refresh points for new user
+          try {
+            const challengeService = new ChallengeService(userIdentity);
+            await challengeService.refreshUserPoints(window.location.origin);
+            console.log("🔄 AuthContext: Automatically refreshed points for new user");
+          } catch (error) {
+            console.error("🔄 AuthContext: Failed to auto-refresh points:", error);
+          }
         },
         onError: (error) => {
           console.error("Login failed:", error);

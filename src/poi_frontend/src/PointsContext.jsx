@@ -23,7 +23,8 @@ export const PointsProvider = ({ children }) => {
   // Automatically load points when identity is available
   useEffect(() => {
     if (identity) {
-      getPoints();
+      // Force refresh for new users or when no points exist
+      getPoints(!points);
     }
   }, [identity]);
 
