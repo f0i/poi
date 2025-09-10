@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./AuthContext";
 import { PointsProvider } from "./PointsContext";
 import Dashboard from "./components/Dashboard";
 import UserProfile from "./components/UserProfile";
+import Leaderboard from "./components/Leaderboard";
 
 function AuthApp() {
   const { isAuthenticated, login, loading, userData } = useAuth();
