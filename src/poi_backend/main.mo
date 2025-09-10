@@ -259,21 +259,61 @@ persistent actor {
           Debug.print("🔍 BACKEND: [FETCH] Public Gists: " # (switch (user.public_gists) { case (?pg) Nat.toText(pg); case (null) "null" }));
           Debug.print("🔍 BACKEND: [FETCH] ===== END EXTERNAL USER DATA =====");
 
-          // Store in cache
-          let cachedUser : CachedUser = {
-            user = user;
-            timestamp = Time.now();
-            ttl = CACHE_TTL;
-          };
-          userDataStore := Trie.replace(
-            userDataStore,
-            { key = principal; hash = Principal.hash(principal) },
-            Principal.equal,
-            ?cachedUser,
-          ).0;
-          Debug.print("🔍 BACKEND: [FETCH] Stored user data in cache for principal: " # Principal.toText(principal));
-          Debug.print("🔍 BACKEND: [FETCH] ===== fetchUserData() END (SUCCESS) =====");
-          return ?user;
+           // Store in cache
+           let cachedUser : CachedUser = {
+             user = user;
+             timestamp = Time.now();
+             ttl = CACHE_TTL;
+           };
+           userDataStore := Trie.replace(
+             userDataStore,
+             { key = principal; hash = Principal.hash(principal) },
+             Principal.equal,
+             ?cachedUser,
+           ).0;
+           Debug.print("🔍 BACKEND: [FETCH] Stored user data in cache for principal: " # Principal.toText(principal));
+
+           // Calculate and store initial points for new users
+           let existingPoints = Trie.find(userPoints, { key = principal; hash = Principal.hash(principal) }, Principal.equal);
+           switch (existingPoints) {
+             case (null) {
+               Debug.print("🔍 BACKEND: [FETCH] No existing points found, calculating initial follower points");
+               // Calculate initial follower points
+               let initialFollowerPoints = switch (user.followers_count) {
+                 case (?count) {
+                   Debug.print("🔍 BACKEND: [FETCH] Initial follower count: " # Nat.toText(count));
+                   calculateFollowerPoints(count);
+                 };
+                 case (null) {
+                   Debug.print("🔍 BACKEND: [FETCH] No follower count available for initial calculation");
+                   0;
+                 };
+               };
+
+               // Store initial points
+               let initialPoints = {
+                 challengePoints = 0;
+                 followerPoints = initialFollowerPoints;
+                 totalPoints = initialFollowerPoints;
+                 lastUpdated = Time.now();
+               };
+
+               userPoints := Trie.replace(
+                 userPoints,
+                 { key = principal; hash = Principal.hash(principal) },
+                 Principal.equal,
+                 ?initialPoints,
+               ).0;
+
+               Debug.print("🔍 BACKEND: [FETCH] Stored initial points for new user: " # Nat.toText(initialFollowerPoints) # " follower points");
+             };
+             case (?_) {
+               Debug.print("🔍 BACKEND: [FETCH] User already has points stored, skipping initial calculation");
+             };
+           };
+
+           Debug.print("🔍 BACKEND: [FETCH] ===== fetchUserData() END (SUCCESS) =====");
+           return ?user;
         };
         case (null) {
           Debug.print("🔍 BACKEND: [FETCH] WARNING: No user data found for principal: " # Principal.toText(principal));
@@ -997,6 +1037,70 @@ persistent actor {
             case (?username) { username };
             case (null) { "null" };
           };
+          let providerText = switch (cachedUser.user.provider) {
+            case (#x) { "x" };
+            case (#github) { "github" };
+            case (#twitter) { "twitter" };
+            case (#discord) { "discord" };
+            case (#google) { "google" };
+            case (#auth0) { "auth0" };
+            case (#zitadel) { "zitadel" };
+          };
+          Debug.print("🔍 BACKEND: [FOLLOWER] Username: " # usernameText);
+          Debug.print("🔍 BACKEND: [FOLLOWER] Provider: " # providerText);
+
+          switch (cachedUser.user.followers_count) {
+            case (?count) {
+              Debug.print("🔍 BACKEND: [FOLLOWER] Raw follower count from cache: " # Nat.toText(count));
+              Debug.print("🔍 BACKEND: [FOLLOWER] Cache timestamp: " # Int.toText(cachedUser.timestamp));
+              let cacheAgeNanos = Time.now() - cachedUser.timestamp;
+              let cacheAgeSeconds = cacheAgeNanos / 1_000_000_000;
+              Debug.print("🔍 BACKEND: [FOLLOWER] Cache age (seconds): " # Int.toText(cacheAgeSeconds));
+
+              let calculatedFollowerPoints = calculateFollowerPoints(count);
+              Debug.print("🔍 BACKEND: [FOLLOWER] ===== FOLLOWER POINTS ALGORITHM =====");
+              Debug.print("🔍 BACKEND: [FOLLOWER] Input followers: " # Nat.toText(count));
+              Debug.print("🔍 BACKEND: [FOLLOWER] Algorithm: for each 100 followers = 10 points, plus (followers % 100) / 10");
+              Debug.print("🔍 BACKEND: [FOLLOWER] Calculation steps:");
+
+              // Show detailed calculation
+              var points : Nat = 0;
+              var score : Nat = count;
+              var step = 0;
+              while (score > 100) {
+                points += 10;
+                score := score / 10;
+                step += 1;
+                Debug.print("🔍 BACKEND: [FOLLOWER] Step " # Nat.toText(step) # ": score=" # Nat.toText(score * 10) # ", points=" # Nat.toText(points));
+              };
+              points += score / 10;
+              Debug.print("🔍 BACKEND: [FOLLOWER] Final step: remaining=" # Nat.toText(score) # ", bonus points=" # Nat.toText(score / 10));
+
+              Debug.print("🔍 BACKEND: [FOLLOWER] Final calculated follower points: " # Nat.toText(calculatedFollowerPoints));
+              calculatedFollowerPoints;
+            };
+            case (null) {
+              Debug.print("🔍 BACKEND: [FOLLOWER] ERROR: No follower count in cached user data!");
+              Debug.print("🔍 BACKEND: [FOLLOWER] Available user data fields:");
+              Debug.print("🔍 BACKEND: [FOLLOWER] - followers_count: null");
+              Debug.print("🔍 BACKEND: [FOLLOWER] - following_count: " # (switch (cachedUser.user.following_count) { case (?fc) Nat.toText(fc); case (null) "null" }));
+              Debug.print("🔍 BACKEND: [FOLLOWER] - tweet_count: " # (switch (cachedUser.user.tweet_count) { case (?tc) Nat.toText(tc); case (null) "null" }));
+              Debug.print("🔍 BACKEND: [FOLLOWER] - public_repos: " # (switch (cachedUser.user.public_repos) { case (?pr) Nat.toText(pr); case (null) "null" }));
+              Debug.print("🔍 BACKEND: [FOLLOWER] - public_gists: " # (switch (cachedUser.user.public_gists) { case (?pg) Nat.toText(pg); case (null) "null" }));
+              0;
+            };
+          };
+        } else {
+          Debug.print("🔍 BACKEND: [FOLLOWER] Cache is stale/expired, cannot calculate follower points");
+          0;
+        };
+      };
+      case (null) {
+        Debug.print("🔍 BACKEND: [FOLLOWER] ERROR: No cached user data found for user!");
+        Debug.print("🔍 BACKEND: [FOLLOWER] This means user has never logged in or data was never cached");
+        0;
+      };
+    };
           let providerText = switch (cachedUser.user.provider) {
             case (#x) { "x" };
             case (#github) { "github" };
