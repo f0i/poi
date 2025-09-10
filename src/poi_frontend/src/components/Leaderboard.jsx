@@ -228,18 +228,18 @@ function Leaderboard() {
                       user.principal.toString() ===
                       identity?.getPrincipal().toString();
 
-                    return (
-                      <div
-                        key={user.principal.toString()}
-                        className={`rounded-lg p-4 border transition-all duration-200 hover:scale-[1.02] relative ${
-                          isCurrentUser
-                            ? "bg-blue-900/20 border-blue-500/50 ring-1 ring-blue-500/20"
-                            : getRankStyle(rank)
-                        } ${index >= 3 ? 'blur-sm opacity-60' : 'shadow-lg ring-1 ring-white/10'}`}
-                        style={{
-                          filter: index >= 3 ? `blur(${Math.min((index - 2) * 0.5, 2)}px)` : 'none'
-                        }}
-                      >
+                     return (
+                       <div
+                         key={user.principal.toString()}
+                         className={`rounded-lg p-4 border transition-all duration-200 hover:scale-[1.02] relative ${
+                           isCurrentUser
+                             ? "bg-blue-900/20 border-blue-500/50 ring-1 ring-blue-500/20"
+                             : getRankStyle(rank)
+                         } ${index >= 3 && isAuthenticated ? 'blur-sm opacity-60' : 'shadow-lg ring-1 ring-white/10'}`}
+                         style={{
+                           filter: index >= 3 && isAuthenticated ? `blur(${Math.min((index - 2) * 0.5, 2)}px)` : 'none'
+                         }}
+                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
                             {/* Rank */}

@@ -24,7 +24,9 @@ function AuthApp() {
       {/* Show leaderboard in background when not authenticated */}
       {!isAuthenticated && (
         <div className="min-h-screen">
-          <Leaderboard />
+          <div className="max-w-6xl mx-auto p-8">
+            <Leaderboard />
+          </div>
         </div>
       )}
 
@@ -54,11 +56,11 @@ function AuthApp() {
               <p className="text-slate-400 mb-4">
                 Sign in to earn points, complete challenges, and climb the leaderboard!
               </p>
-              <div className="bg-slate-700/50 rounded-lg p-3 mb-4">
-                <p className="text-sm text-slate-300">
-                  👆 See the leaderboard above? That's what you can achieve!
-                </p>
-              </div>
+               <div className="bg-slate-700/50 rounded-lg p-3 mb-4">
+                 <p className="text-sm text-slate-300">
+                   🚀 Join the competition and start earning points today!
+                 </p>
+               </div>
             </div>
             <button
               onClick={login}
