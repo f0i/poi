@@ -10,15 +10,18 @@ function Leaderboard() {
   const [loading, setLoading] = useState(false);
   const [userRank, setUserRank] = useState(null);
 
-  const challengeService = new ChallengeService(identity);
+  const challengeService = new ChallengeService(isAuthenticated ? identity : undefined);
 
   useEffect(() => {
     console.log("🔍 DEBUG Leaderboard: useEffect triggered", {
       isAuthenticated,
       hasUserPoints: !!userPoints,
     });
+
+    // Always load leaderboard data for visibility
+    loadLeaderboard();
+
     if (isAuthenticated) {
-      loadLeaderboard();
       // Load points if we don't have them yet
       if (!userPoints) {
         console.log(
