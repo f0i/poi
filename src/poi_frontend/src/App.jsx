@@ -32,7 +32,7 @@ function AuthApp() {
 
       {/* Sign-in overlay for unauthenticated users */}
       {!isAuthenticated && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="card text-center max-w-md mx-auto relative">
             <div className="mb-6">
               <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
