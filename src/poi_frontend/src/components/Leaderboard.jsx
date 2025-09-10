@@ -167,7 +167,7 @@ function Leaderboard() {
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Left Column - Full Leaderboard */}
-        <div className="xl:col-span-2">
+        <div className="xl:col-span-2 order-2 xl:order-1">
           <div className="card">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-white flex items-center">
@@ -381,7 +381,7 @@ function Leaderboard() {
         </div>
 
         {/* Right Column - Top 3 + User Profile */}
-        <div className="space-y-6">
+        <div className="space-y-6 order-1 xl:order-2">
           {/* Top 3 Podium */}
           {leaderboard.length >= 3 && (
             <div className="card">
