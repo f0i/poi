@@ -1,6 +1,8 @@
 import { useAuth } from "../AuthContext";
 import { usePoints } from "../PointsContext";
 import { useState, useEffect } from "react";
+import ChallengeList from "./ChallengeList";
+import Settings from "./Settings";
 
 function UserProfile() {
   const { isAuthenticated, identity, userData, userDataLoading, logout } =
@@ -237,12 +239,24 @@ function UserProfile() {
             </div>
           )}
 
-          {/* Logout Button */}
-          <div className="mt-6 pt-4 border-t border-slate-700">
-            <button onClick={logout} className="btn-secondary w-full">
-              Sign Out
-            </button>
-          </div>
+           {/* Challenges Section */}
+           <div className="mt-6">
+             <ChallengeList />
+           </div>
+
+           {/* Settings Section - Admin Only */}
+           {isAdmin && (
+             <div className="mt-6">
+               <Settings />
+             </div>
+           )}
+
+           {/* Logout Button */}
+           <div className="mt-6 pt-4 border-t border-slate-700">
+             <button onClick={logout} className="btn-secondary w-full">
+               Sign Out
+             </button>
+           </div>
         </div>
       ) : (
         <div className="card text-center">
