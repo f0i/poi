@@ -263,8 +263,8 @@ function Settings() {
             {currentAdmin && (
               <div className="text-slate-400 text-sm">
                 Current Admin:{" "}
-                <code className="bg-slate-600 px-2 py-1 rounded text-blue-400 font-mono">
-                  {currentAdmin.toString().slice(0, 20)}...
+                <code className="bg-slate-600 px-2 py-1 rounded text-blue-400 font-mono break-all">
+                  {currentAdmin.toString()}
                 </code>
               </div>
             )}
@@ -541,11 +541,12 @@ function Settings() {
                                        </div>
                                      </div>
 
-                                      <div className="text-xs text-slate-400 mb-2">
-                                        Principal:{" "}
-                                        {user.principal.toString().slice(0, 20)}
-                                        ...
-                                        <br />
+                                       <div className="text-xs text-slate-400 mb-2">
+                                         Principal:{" "}
+                                         <span className="font-mono break-all">
+                                           {user.principal.toString()}
+                                         </span>
+                                         <br />
                                         Provider: {Object.keys(user.provider)[0]} | Cache:{" "}
                                         {user.cacheValid ? "Valid" : "Invalid"}
                                        {user.followersCount && (
