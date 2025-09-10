@@ -97,4 +97,3 @@ function Layout({ sidebar, main }) {
 }
 
 export default Layout;
-

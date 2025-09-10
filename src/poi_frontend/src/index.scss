@@ -7,7 +7,9 @@
 
   body {
     @apply bg-slate-900 text-slate-100 font-sans antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
   }
 }
 

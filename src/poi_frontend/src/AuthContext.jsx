@@ -79,7 +79,8 @@ export const AuthProvider = ({ children }) => {
 
       // Set maximum session duration (30 days) and disable idle timeout
       if (process.env.DFX_NETWORK === "ic") {
-        loginOptions.identityProvider = "https://login.f0i.de?provider=x&maxTimeToLive=2592000000000000&disableIdle=true";
+        loginOptions.identityProvider =
+          "https://login.f0i.de?provider=x&maxTimeToLive=2592000000000000&disableIdle=true";
       } else {
         const baseUrl = `http://localhost:4943/?canisterId=${process.env.CANISTER_ID_INTERNET_IDENTITY}`;
         loginOptions.identityProvider = `${baseUrl}&maxTimeToLive=2592000000000000&disableIdle=true`;

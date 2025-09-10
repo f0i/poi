@@ -18,7 +18,9 @@ export class ChallengeService {
   private getActor() {
     if (!this.actor) {
       if (!canisterId) {
-        throw new Error("Backend canister not available. Make sure CANISTER_ID_POI_BACKEND environment variable is set.");
+        throw new Error(
+          "Backend canister not available. Make sure CANISTER_ID_POI_BACKEND environment variable is set.",
+        );
       }
 
       const options: any = {};
@@ -60,7 +62,11 @@ export class ChallengeService {
   ): Promise<bigint | null> {
     try {
       const actor = this.getActor();
-      const result = await actor.createChallenge(description, challengeType, points);
+      const result = await actor.createChallenge(
+        description,
+        challengeType,
+        points,
+      );
       return result;
     } catch (error) {
       console.error("Failed to create challenge:", error);
@@ -100,7 +106,9 @@ export class ChallengeService {
     }
   }
 
-  async verifyChallenge(id: bigint): Promise<{ success: boolean } | { error: string }> {
+  async verifyChallenge(
+    id: bigint,
+  ): Promise<{ success: boolean } | { error: string }> {
     try {
       const actor = this.getActor();
       const result = await actor.verifyChallenge(id);
@@ -111,7 +119,11 @@ export class ChallengeService {
     }
   }
 
-  async getChallengeStatus(id: bigint): Promise<{ pending: null } | { verified: null } | { failed: string } | null> {
+  async getChallengeStatus(
+    id: bigint,
+  ): Promise<
+    { pending: null } | { verified: null } | { failed: string } | null
+  > {
     try {
       const actor = this.getActor();
       const result = await actor.getChallengeStatus(id);
@@ -169,23 +181,37 @@ export class ChallengeService {
     followerPoints: bigint;
     totalPoints: bigint;
   }> {
-    console.log('🔍 DEBUG ChallengeService: getUserPoints called');
-    console.log('🔍 DEBUG ChallengeService: Identity available:', !!this.identity);
-    console.log('🔍 DEBUG ChallengeService: Principal:', this.identity?.getPrincipal().toString());
+    console.log("🔍 DEBUG ChallengeService: getUserPoints called");
+    console.log(
+      "🔍 DEBUG ChallengeService: Identity available:",
+      !!this.identity,
+    );
+    console.log(
+      "🔍 DEBUG ChallengeService: Principal:",
+      this.identity?.getPrincipal().toString(),
+    );
     try {
-      console.log('🔍 DEBUG ChallengeService: Getting actor...');
+      console.log("🔍 DEBUG ChallengeService: Getting actor...");
       const actor = this.getActor();
-      console.log('🔍 DEBUG ChallengeService: Calling actor.getUserPoints()...');
+      console.log(
+        "🔍 DEBUG ChallengeService: Calling actor.getUserPoints()...",
+      );
       const result = await actor.getUserPoints();
-      console.log('🔍 DEBUG ChallengeService: actor.getUserPoints() returned:', result);
+      console.log(
+        "🔍 DEBUG ChallengeService: actor.getUserPoints() returned:",
+        result,
+      );
       return result;
     } catch (error) {
-      console.error('🔍 DEBUG ChallengeService: Failed to get user points:', error);
+      console.error(
+        "🔍 DEBUG ChallengeService: Failed to get user points:",
+        error,
+      );
       const err = error as Error;
-      console.error('🔍 DEBUG ChallengeService: Error details:', {
+      console.error("🔍 DEBUG ChallengeService: Error details:", {
         message: err.message,
         stack: err.stack,
-        name: err.name
+        name: err.name,
       });
       return {
         challengePoints: 0n,
@@ -195,14 +221,16 @@ export class ChallengeService {
     }
   }
 
-  async getLeaderboard(): Promise<Array<{
-    principal: any;
-    challengePoints: bigint;
-    followerPoints: bigint;
-    totalPoints: bigint;
-    username: string | null;
-    name: string | null;
-  }>> {
+  async getLeaderboard(): Promise<
+    Array<{
+      principal: any;
+      challengePoints: bigint;
+      followerPoints: bigint;
+      totalPoints: bigint;
+      username: string | null;
+      name: string | null;
+    }>
+  > {
     try {
       const actor = this.getActor();
       const result = await actor.getLeaderboard();
@@ -212,8 +240,6 @@ export class ChallengeService {
       return [];
     }
   }
-
-
 
   async getAdmin(): Promise<any | null> {
     try {
@@ -284,4 +310,3 @@ export class ChallengeService {
     }
   }
 }
-

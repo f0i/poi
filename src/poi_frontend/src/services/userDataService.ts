@@ -10,7 +10,9 @@ export class UserDataService {
   private getActor() {
     if (!this.actor) {
       if (!canisterId) {
-        throw new Error("Backend canister not available. Make sure CANISTER_ID_POI_BACKEND environment variable is set.");
+        throw new Error(
+          "Backend canister not available. Make sure CANISTER_ID_POI_BACKEND environment variable is set.",
+        );
       }
 
       const options: any = {};

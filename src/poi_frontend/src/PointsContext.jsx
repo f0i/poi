@@ -1,13 +1,13 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import { ChallengeService } from './services/challengeService';
-import { useAuth } from './AuthContext';
+import { createContext, useContext, useState, useEffect } from "react";
+import { ChallengeService } from "./services/challengeService";
+import { useAuth } from "./AuthContext";
 
 const PointsContext = createContext();
 
 export const usePoints = () => {
   const context = useContext(PointsContext);
   if (!context) {
-    throw new Error('usePoints must be used within a PointsProvider');
+    throw new Error("usePoints must be used within a PointsProvider");
   }
   return context;
 };
@@ -18,7 +18,7 @@ export const PointsProvider = ({ children }) => {
   const [lastUpdate, setLastUpdate] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  console.log('🔍 DEBUG PointsProvider: Initializing PointsProvider');
+  console.log("🔍 DEBUG PointsProvider: Initializing PointsProvider");
 
   // Automatically load points when identity is available
   useEffect(() => {
@@ -36,59 +36,80 @@ export const PointsProvider = ({ children }) => {
 
   // Get points with smart caching
   const getPoints = async (forceRefresh = false) => {
-    console.log('🔍 DEBUG PointsContext: getPoints called', { forceRefresh, hasCachedPoints: !!points, shouldRefresh: shouldRefresh() });
+    console.log("🔍 DEBUG PointsContext: getPoints called", {
+      forceRefresh,
+      hasCachedPoints: !!points,
+      shouldRefresh: shouldRefresh(),
+    });
 
     // Return cached data if available and not forcing refresh
     if (!forceRefresh && points && !shouldRefresh()) {
-      console.log('🔍 DEBUG PointsContext: Returning cached points', points);
+      console.log("🔍 DEBUG PointsContext: Returning cached points", points);
       return points;
     }
 
-    console.log('🔍 DEBUG PointsContext: Fetching fresh points...');
+    console.log("🔍 DEBUG PointsContext: Fetching fresh points...");
     setIsRefreshing(true);
 
     try {
       // Get user points directly (no external API refresh to avoid inter-canister calls)
-      console.log('🔍 DEBUG PointsContext: Creating ChallengeService...');
-      console.log('🔍 DEBUG PointsContext: Current identity:', identity);
-      console.log('🔍 DEBUG PointsContext: Current principal:', identity?.getPrincipal().toString());
+      console.log("🔍 DEBUG PointsContext: Creating ChallengeService...");
+      console.log("🔍 DEBUG PointsContext: Current identity:", identity);
+      console.log(
+        "🔍 DEBUG PointsContext: Current principal:",
+        identity?.getPrincipal().toString(),
+      );
       const challengeService = new ChallengeService(identity);
-      console.log('🔍 DEBUG PointsContext: Calling getUserPoints()...');
+      console.log("🔍 DEBUG PointsContext: Calling getUserPoints()...");
 
       const userPoints = await challengeService.getUserPoints();
-      console.log('🔍 DEBUG PointsContext: getUserPoints() returned:', userPoints);
+      console.log(
+        "🔍 DEBUG PointsContext: getUserPoints() returned:",
+        userPoints,
+      );
 
-      console.log('🔍 DEBUG PointsContext: Setting points in state...');
+      console.log("🔍 DEBUG PointsContext: Setting points in state...");
       setPoints(userPoints);
       setLastUpdate(Date.now());
 
-      console.log('🔍 DEBUG PointsContext: Points successfully updated');
+      console.log("🔍 DEBUG PointsContext: Points successfully updated");
       return userPoints;
     } catch (error) {
-      console.error('🔍 DEBUG PointsContext: Failed to load user points:', error);
-      console.error('🔍 DEBUG PointsContext: Error details:', {
+      console.error(
+        "🔍 DEBUG PointsContext: Failed to load user points:",
+        error,
+      );
+      console.error("🔍 DEBUG PointsContext: Error details:", {
         message: error.message,
         stack: error.stack,
-        name: error.name
+        name: error.name,
       });
 
       // Fallback: Use existing cached points if available
       if (points) {
-        console.log('🔍 DEBUG PointsContext: Using cached points as fallback', points);
+        console.log(
+          "🔍 DEBUG PointsContext: Using cached points as fallback",
+          points,
+        );
         return points;
       }
 
-      console.log('🔍 DEBUG PointsContext: No cached points available, returning zeros');
+      console.log(
+        "🔍 DEBUG PointsContext: No cached points available, returning zeros",
+      );
       // Return empty points as last resort
       const emptyPoints = {
         challengePoints: 0n,
         followerPoints: 0n,
         totalPoints: 0n,
       };
-      console.log('🔍 DEBUG PointsContext: Returning empty points', emptyPoints);
+      console.log(
+        "🔍 DEBUG PointsContext: Returning empty points",
+        emptyPoints,
+      );
       return emptyPoints;
     } finally {
-      console.log('🔍 DEBUG PointsContext: Setting isRefreshing to false');
+      console.log("🔍 DEBUG PointsContext: Setting isRefreshing to false");
       setIsRefreshing(false);
     }
   };
@@ -102,8 +123,6 @@ export const PointsProvider = ({ children }) => {
   };
 
   return (
-    <PointsContext.Provider value={value}>
-      {children}
-    </PointsContext.Provider>
+    <PointsContext.Provider value={value}>{children}</PointsContext.Provider>
   );
 };
