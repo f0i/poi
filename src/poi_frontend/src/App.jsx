@@ -9,7 +9,7 @@ import Settings from "./components/Settings";
 
 function AuthApp() {
   const { isAuthenticated, login, loading, logout, userData } = useAuth();
-  const [activeView, setActiveView] = React.useState('dashboard');
+  const [activeView, setActiveView] = React.useState('leaderboard');
 
   if (loading) {
     return (

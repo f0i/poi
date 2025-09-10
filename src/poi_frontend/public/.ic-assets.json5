@@ -9,6 +9,10 @@
         // Options are: "hardened" | "standard" | "disabled".
         "security_policy": "standard",
 
+        "headers": {
+            "Content-Security-Policy": "img-src 'self' data: https://pbs.twimg.com;"
+        },
+
         // Uncomment to disable the warning about using the
         // standard security policy, if you understand the risk
         // "disable_security_policy_warning": true,

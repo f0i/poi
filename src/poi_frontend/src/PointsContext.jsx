@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 import { ChallengeService } from './services/challengeService';
 import { useAuth } from './AuthContext';
 
@@ -19,6 +19,13 @@ export const PointsProvider = ({ children }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   console.log('🔍 DEBUG PointsProvider: Initializing PointsProvider');
+
+  // Automatically load points when identity is available
+  useEffect(() => {
+    if (identity) {
+      getPoints();
+    }
+  }, [identity]);
 
   // Smart refresh logic - only refresh if data is older than 5 minutes
   const shouldRefresh = () => {
