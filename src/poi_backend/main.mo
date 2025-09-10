@@ -2010,4 +2010,178 @@ persistent actor {
       case (null) { return null };
     };
   };
+
+  // Admin function to delete a user completely (removes all user data)
+  public shared ({ caller }) func deleteUser(userPrincipal : Principal) : async {
+    success : Bool;
+    message : Text;
+  } {
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can delete users");
+    };
+
+    Debug.print("Admin " # Principal.toText(caller) # " attempting to delete user " # Principal.toText(userPrincipal));
+
+    // Check if user exists
+    let userExists = Trie.find(userDataStore, { key = userPrincipal; hash = Principal.hash(userPrincipal) }, Principal.equal);
+    let pointsExist = Trie.find(userPoints, { key = userPrincipal; hash = Principal.hash(userPrincipal) }, Principal.equal);
+
+    if (userExists == null and pointsExist == null) {
+      return {
+        success = false;
+        message = "User not found - no data to delete";
+      };
+    };
+
+    // Remove user data from all storage systems
+    var deletedItems = 0;
+
+    // 1. Remove cached user data
+    userDataStore := Trie.replace(
+      userDataStore,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    deletedItems += 1;
+
+    // 2. Remove user points
+    userPoints := Trie.replace(
+      userPoints,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    deletedItems += 1;
+
+    // 3. Remove challenge statuses
+    challengeStatuses := Trie.replace(
+      challengeStatuses,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    deletedItems += 1;
+
+    // 4. Remove verification attempts
+    verificationAttempts := Trie.replace(
+      verificationAttempts,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    deletedItems += 1;
+
+    // 5. Remove consecutive failures
+    consecutiveFailures := Trie.replace(
+      consecutiveFailures,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    deletedItems += 1;
+
+    // 6. Remove verification lockouts
+    verificationLockouts := Trie.replace(
+      verificationLockouts,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    deletedItems += 1;
+
+    // 7. Remove permanent blocks
+    permanentBlocks := Trie.replace(
+      permanentBlocks,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    deletedItems += 1;
+
+    // 8. Remove ongoing verifications
+    ongoingVerifications := Trie.replace(
+      ongoingVerifications,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    deletedItems += 1;
+
+    Debug.print("Successfully deleted user " # Principal.toText(userPrincipal) # " - removed " # Nat.toText(deletedItems) # " data entries");
+
+    return {
+      success = true;
+      message = "User deleted successfully - removed " # Nat.toText(deletedItems) # " data entries";
+    };
+  };
+
+  // Admin function to clear only verification attempts and lockouts for a user
+  public shared ({ caller }) func clearUserVerificationData(userPrincipal : Principal) : async {
+    success : Bool;
+    message : Text;
+  } {
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can clear verification data");
+    };
+
+    Debug.print("Admin " # Principal.toText(caller) # " clearing verification data for user " # Principal.toText(userPrincipal));
+
+    // Clear verification-related data (keep user data and points intact)
+    var clearedItems = 0;
+
+    // 1. Remove verification attempts
+    verificationAttempts := Trie.replace(
+      verificationAttempts,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    clearedItems += 1;
+
+    // 2. Remove consecutive failures
+    consecutiveFailures := Trie.replace(
+      consecutiveFailures,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    clearedItems += 1;
+
+    // 3. Remove verification lockouts
+    verificationLockouts := Trie.replace(
+      verificationLockouts,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    clearedItems += 1;
+
+    // 4. Remove permanent blocks
+    permanentBlocks := Trie.replace(
+      permanentBlocks,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    clearedItems += 1;
+
+    // 5. Remove ongoing verifications
+    ongoingVerifications := Trie.replace(
+      ongoingVerifications,
+      { key = userPrincipal; hash = Principal.hash(userPrincipal) },
+      Principal.equal,
+      null,
+    ).0;
+    clearedItems += 1;
+
+    Debug.print("Successfully cleared verification data for user " # Principal.toText(userPrincipal) # " - cleared " # Nat.toText(clearedItems) # " entries");
+
+    return {
+      success = true;
+      message = "Verification data cleared successfully - reset " # Nat.toText(clearedItems) # " entries";
+    };
+  };
 };
