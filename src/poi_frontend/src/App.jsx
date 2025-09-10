@@ -1,6 +1,7 @@
 import React from "react";
 import { AuthProvider, useAuth } from "./AuthContext";
 import { PointsProvider } from "./PointsContext";
+import { ChallengeService } from "./services/challengeService";
 import Dashboard from "./components/Dashboard";
 import Leaderboard from "./components/Leaderboard";
 import ChallengeList from "./components/ChallengeList";
@@ -8,10 +9,47 @@ import UserProfile from "./components/UserProfile";
 import Settings from "./components/Settings";
 
 function AuthApp() {
-  const { isAuthenticated, login, loading, logout, userData } = useAuth();
+  const { isAuthenticated, login, loading, logout, userData, identity } = useAuth();
   const [activeView, setActiveView] = React.useState("leaderboard");
+  const [currentAdmin, setCurrentAdmin] = React.useState(null);
+  const [isAdmin, setIsAdmin] = React.useState(false);
+  const [adminLoading, setAdminLoading] = React.useState(false);
 
-  if (loading) {
+  const challengeService = new ChallengeService(identity);
+
+  React.useEffect(() => {
+    if (isAuthenticated && identity) {
+      loadAdminStatus();
+    }
+  }, [isAuthenticated, identity]);
+
+  // Redirect away from settings if user loses admin access
+  React.useEffect(() => {
+    if (activeView === "settings" && currentAdmin && !isAdmin) {
+      setActiveView("dashboard");
+    }
+  }, [currentAdmin, isAdmin, activeView]);
+
+  const loadAdminStatus = async () => {
+    setAdminLoading(true);
+    try {
+      const admin = await challengeService.getAdmin();
+      setCurrentAdmin(admin);
+      // Check if current user is admin
+      if (admin && identity) {
+        setIsAdmin(admin.toString() === identity.getPrincipal().toString());
+      } else {
+        setIsAdmin(false);
+      }
+    } catch (error) {
+      console.error("Failed to load admin status:", error);
+      setIsAdmin(false);
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  if (loading || adminLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -207,35 +245,38 @@ function AuthApp() {
                 </svg>
               </button>
 
-              <button
-                onClick={() => setActiveView("settings")}
-                className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
-                  activeView === "settings"
-                    ? "bg-blue-600 text-white"
-                    : "text-slate-400 hover:bg-slate-700 hover:text-white"
-                }`}
-                title="Settings"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              {/* Only show settings button for admins or when no admin is set yet */}
+              {(isAdmin || !currentAdmin) && (
+                <button
+                  onClick={() => setActiveView("settings")}
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+                    activeView === "settings"
+                      ? "bg-blue-600 text-white"
+                      : "text-slate-400 hover:bg-slate-700 hover:text-white"
+                  }`}
+                  title="Settings"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </button>
+              )}
             </nav>
 
             {/* User Avatar & Logout */}
