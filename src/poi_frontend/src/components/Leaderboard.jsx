@@ -62,7 +62,8 @@ function Leaderboard() {
 
 
   const formatNumber = (num) => {
-    return new Intl.NumberFormat().format(Number(num));
+    const numValue = typeof num === 'bigint' ? Number(num) : parseInt(num);
+    return new Intl.NumberFormat().format(numValue);
   };
 
   const getRankIcon = (rank) => {

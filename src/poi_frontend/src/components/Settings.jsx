@@ -87,7 +87,7 @@ function Settings() {
       try {
         const result = await challengeService.recalculateAllUserPoints();
         setRecalcResult(result);
-        alert(`Successfully recalculated points for ${Number(result.usersProcessed)} users. Total points updated: ${Number(result.totalPointsUpdated)}`);
+        alert(`Successfully recalculated points for ${typeof result.usersProcessed === 'bigint' ? Number(result.usersProcessed) : parseInt(result.usersProcessed)} users. Total points updated: ${typeof result.totalPointsUpdated === 'bigint' ? Number(result.totalPointsUpdated) : parseInt(result.totalPointsUpdated)}`);
       } catch (error) {
         console.error('Failed to recalculate points:', error);
         alert('Failed to recalculate points. Check console for details.');
@@ -258,7 +258,7 @@ function Settings() {
                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                          </svg>
                          <div className="text-green-400 text-sm">
-                           <strong>Recalculation Complete:</strong> {Number(recalcResult.usersProcessed)} users processed, {Number(recalcResult.totalPointsUpdated)} total points
+                           <strong>                          Recalculation Complete:</strong> {typeof recalcResult.usersProcessed === 'bigint' ? Number(recalcResult.usersProcessed) : parseInt(recalcResult.usersProcessed)} users processed, {typeof recalcResult.totalPointsUpdated === 'bigint' ? Number(recalcResult.totalPointsUpdated) : parseInt(recalcResult.totalPointsUpdated)} total points
                          </div>
                        </div>
                      </div>
@@ -300,11 +300,11 @@ function Settings() {
                              <div>
                                <h6 className="text-blue-400 font-medium mb-2">Challenges ({systemData.challenges.length})</h6>
                                <div className="space-y-1">
-                                 {systemData.challenges.map((challenge, index) => (
-                                   <div key={index} className="text-slate-300 text-sm bg-slate-700 rounded p-2">
-                                     <strong>ID {Number(challenge.id)}:</strong> {challenge.description} ({Number(challenge.points)} pts)
-                                   </div>
-                                 ))}
+                                  {systemData.challenges.map((challenge, index) => (
+                                    <div key={index} className="text-slate-300 text-sm bg-slate-700 rounded p-2">
+                                      <strong>ID {typeof challenge.id === 'bigint' ? Number(challenge.id) : parseInt(challenge.id)}:</strong> {challenge.description} ({typeof challenge.points === 'bigint' ? Number(challenge.points) : parseInt(challenge.points)} pts)
+                                    </div>
+                                  ))}
                                </div>
                              </div>
 
@@ -318,19 +318,19 @@ function Settings() {
                                          <strong>{user.name || 'Anonymous'}</strong>
                                          {user.username && <span className="text-slate-400"> (@{user.username})</span>}
                                        </div>
-                                       <div className="text-right">
-                                         <div className="text-green-400 font-medium">{Number(user.totalPoints)} pts</div>
-                                         <div className="text-xs text-slate-400">
-                                           {Number(user.challengePoints)} + {Number(user.followerPoints)}
-                                         </div>
-                                       </div>
+                                        <div className="text-right">
+                                          <div className="text-green-400 font-medium">{typeof user.totalPoints === 'bigint' ? Number(user.totalPoints) : parseInt(user.totalPoints)} pts</div>
+                                          <div className="text-xs text-slate-400">
+                                            {typeof user.challengePoints === 'bigint' ? Number(user.challengePoints) : parseInt(user.challengePoints)} + {typeof user.followerPoints === 'bigint' ? Number(user.followerPoints) : parseInt(user.followerPoints)}
+                                          </div>
+                                        </div>
                                      </div>
 
                                      <div className="text-xs text-slate-400 mb-2">
                                        Principal: {user.principal.toString().slice(0, 20)}...
                                        <br />
-                                       Provider: {user.provider} | Cache: {user.cacheValid ? 'Valid' : 'Invalid'}
-                                       {user.followersCount && <span> | Followers: {Number(user.followersCount)}</span>}
+                                        Provider: {user.provider} | Cache: {user.cacheValid ? 'Valid' : 'Invalid'}
+                                        {user.followersCount && <span> | Followers: {typeof user.followersCount === 'bigint' ? Number(user.followersCount) : parseInt(user.followersCount)}</span>}
                                      </div>
 
                                      {user.completedChallenges.length > 0 && (
@@ -345,9 +345,9 @@ function Settings() {
                                                  challenge.status.pending ? 'bg-yellow-600 text-white' :
                                                  'bg-red-600 text-white'
                                                }`}
-                                             >
-                                               #{Number(challenge.challengeId)} ({Number(challenge.points)}pts)
-                                             </span>
+                                              >
+                                                #{typeof challenge.challengeId === 'bigint' ? Number(challenge.challengeId) : parseInt(challenge.challengeId)} ({typeof challenge.points === 'bigint' ? Number(challenge.points) : parseInt(challenge.points)}pts)
+                                              </span>
                                            ))}
                                          </div>
                                        </div>

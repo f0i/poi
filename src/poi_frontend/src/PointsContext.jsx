@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from 'react';
 import { ChallengeService } from './services/challengeService';
+import { useAuth } from './AuthContext';
 
 const PointsContext = createContext();
 
@@ -12,6 +13,7 @@ export const usePoints = () => {
 };
 
 export const PointsProvider = ({ children }) => {
+  const { identity } = useAuth();
   const [points, setPoints] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -41,7 +43,9 @@ export const PointsProvider = ({ children }) => {
     try {
       // Get user points directly (no external API refresh to avoid inter-canister calls)
       console.log('🔍 DEBUG PointsContext: Creating ChallengeService...');
-      const challengeService = new ChallengeService();
+      console.log('🔍 DEBUG PointsContext: Current identity:', identity);
+      console.log('🔍 DEBUG PointsContext: Current principal:', identity?.getPrincipal().toString());
+      const challengeService = new ChallengeService(identity);
       console.log('🔍 DEBUG PointsContext: Calling getUserPoints()...');
 
       const userPoints = await challengeService.getUserPoints();

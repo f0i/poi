@@ -170,6 +170,8 @@ export class ChallengeService {
     totalPoints: bigint;
   }> {
     console.log('🔍 DEBUG ChallengeService: getUserPoints called');
+    console.log('🔍 DEBUG ChallengeService: Identity available:', !!this.identity);
+    console.log('🔍 DEBUG ChallengeService: Principal:', this.identity?.getPrincipal().toString());
     try {
       console.log('🔍 DEBUG ChallengeService: Getting actor...');
       const actor = this.getActor();

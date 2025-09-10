@@ -215,16 +215,49 @@ persistent actor {
 
   // Fetch user data from external canister
   private func fetchUserData(principal : Principal, origin : Text) : async ?User {
-    Debug.print("Fetching user data from external canister for principal: " # Principal.toText(principal));
+    Debug.print("🔍 BACKEND: [FETCH] ===== fetchUserData() START =====");
+    Debug.print("🔍 BACKEND: [FETCH] Fetching user data from external canister for principal: " # Principal.toText(principal) # " with origin: " # origin);
+
     try {
+      Debug.print("🔍 BACKEND: [FETCH] Creating user data actor...");
       let userDataActor = await* getUserDataActor();
+      Debug.print("🔍 BACKEND: [FETCH] Calling external canister getUser()...");
       let userOpt = await userDataActor.getUser(principal, origin);
+
       switch (userOpt) {
         case (?user) {
+          Debug.print("🔍 BACKEND: [FETCH] SUCCESS: User data received from external canister");
+          Debug.print("🔍 BACKEND: [FETCH] ===== EXTERNAL USER DATA DETAILS =====");
+
           // Debug log user data fields
-          Debug.print("User data received - username: " # (switch (user.username) { case (?u) u; case (null) "null" }));
-          Debug.print("User data received - followers_count: " # (switch (user.followers_count) { case (?fc) Nat.toText(fc); case (null) "null" }));
-          Debug.print("User data received - following_count: " # (switch (user.following_count) { case (?fc) Nat.toText(fc); case (null) "null" }));
+          let usernameText = switch (user.username) { case (?u) u; case (null) "null" };
+          let followersText = switch (user.followers_count) { case (?fc) Nat.toText(fc); case (null) "null" };
+          let followingText = switch (user.following_count) { case (?fc) Nat.toText(fc); case (null) "null" };
+          let providerText = switch (user.provider) {
+            case (#x) { "x" };
+            case (#github) { "github" };
+            case (#twitter) { "twitter" };
+            case (#discord) { "discord" };
+            case (#google) { "google" };
+            case (#auth0) { "auth0" };
+            case (#zitadel) { "zitadel" };
+          };
+
+          Debug.print("🔍 BACKEND: [FETCH] Username: " # usernameText);
+          Debug.print("🔍 BACKEND: [FETCH] Provider: " # providerText);
+          Debug.print("🔍 BACKEND: [FETCH] Followers: " # followersText);
+          Debug.print("🔍 BACKEND: [FETCH] Following: " # followingText);
+          Debug.print("🔍 BACKEND: [FETCH] Name: " # (switch (user.name) { case (?n) n; case (null) "null" }));
+          Debug.print("🔍 BACKEND: [FETCH] Email: " # (switch (user.email) { case (?e) e; case (null) "null" }));
+          Debug.print("🔍 BACKEND: [FETCH] Location: " # (switch (user.location) { case (?l) l; case (null) "null" }));
+          Debug.print("🔍 BACKEND: [FETCH] Website: " # (switch (user.website) { case (?w) w; case (null) "null" }));
+          Debug.print("🔍 BACKEND: [FETCH] Bio: " # (switch (user.bio) { case (?b) b; case (null) "null" }));
+          Debug.print("🔍 BACKEND: [FETCH] Verified: " # (switch (user.verified) { case (?v) (if (v) "true" else "false"); case (null) "null" }));
+          Debug.print("🔍 BACKEND: [FETCH] Email Verified: " # (switch (user.email_verified) { case (?ev) (if (ev) "true" else "false"); case (null) "null" }));
+          Debug.print("🔍 BACKEND: [FETCH] Tweet Count: " # (switch (user.tweet_count) { case (?tc) Nat.toText(tc); case (null) "null" }));
+          Debug.print("🔍 BACKEND: [FETCH] Public Repos: " # (switch (user.public_repos) { case (?pr) Nat.toText(pr); case (null) "null" }));
+          Debug.print("🔍 BACKEND: [FETCH] Public Gists: " # (switch (user.public_gists) { case (?pg) Nat.toText(pg); case (null) "null" }));
+          Debug.print("🔍 BACKEND: [FETCH] ===== END EXTERNAL USER DATA =====");
 
           // Store in cache
           let cachedUser : CachedUser = {
@@ -238,40 +271,93 @@ persistent actor {
             Principal.equal,
             ?cachedUser,
           ).0;
-          Debug.print("Stored user data in cache for principal: " # Principal.toText(principal));
+          Debug.print("🔍 BACKEND: [FETCH] Stored user data in cache for principal: " # Principal.toText(principal));
+          Debug.print("🔍 BACKEND: [FETCH] ===== fetchUserData() END (SUCCESS) =====");
           return ?user;
         };
         case (null) {
-          Debug.print("No user data found for principal: " # Principal.toText(principal));
+          Debug.print("🔍 BACKEND: [FETCH] WARNING: No user data found for principal: " # Principal.toText(principal));
+          Debug.print("🔍 BACKEND: [FETCH] ===== fetchUserData() END (NO DATA) =====");
           return null;
         };
       };
     } catch (_error) {
       // Log error and return null
-      Debug.print("Error fetching user data for principal: " # Principal.toText(principal));
+      Debug.print("🔍 BACKEND: [FETCH] ERROR: Failed to fetch user data for principal: " # Principal.toText(principal));
+      Debug.print("🔍 BACKEND: [FETCH] ===== fetchUserData() END (ERROR) =====");
       return null;
     };
   };
 
   // Get user data (from cache or fetch from external canister)
   public shared ({ caller }) func getUserData(origin : Text) : async ?User {
-    Debug.print("Getting user data for principal: " # Principal.toText(caller));
+    Debug.print("🔍 BACKEND: ===== getUserData() START =====");
+    Debug.print("🔍 BACKEND: Getting user data for principal: " # Principal.toText(caller) # " with origin: " # origin);
 
     // Check cache first
     let cachedOpt = Trie.find(userDataStore, { key = caller; hash = Principal.hash(caller) }, Principal.equal);
     switch (cachedOpt) {
       case (?cached) {
+        Debug.print("🔍 BACKEND: Found cached user data");
+        Debug.print("🔍 BACKEND: Cache timestamp: " # Int.toText(cached.timestamp));
+        Debug.print("🔍 BACKEND: Cache TTL: " # Nat.toText(cached.ttl));
+        Debug.print("🔍 BACKEND: Cache valid: " # (if (isCacheValid(cached)) "YES" else "NO"));
+
         if (isCacheValid(cached)) {
-          Debug.print("Returning cached user data for principal: " # Principal.toText(caller));
+          let usernameText = switch (cached.user.username) {
+            case (?username) { username };
+            case (null) { "null" };
+          };
+          let followersText = switch (cached.user.followers_count) {
+            case (?count) { Nat.toText(count) };
+            case (null) { "null" };
+          };
+          let followingText = switch (cached.user.following_count) {
+            case (?count) { Nat.toText(count) };
+            case (null) { "null" };
+          };
+          let providerText = switch (cached.user.provider) {
+            case (#x) { "x" };
+            case (#github) { "github" };
+            case (#twitter) { "twitter" };
+            case (#discord) { "discord" };
+            case (#google) { "google" };
+            case (#auth0) { "auth0" };
+            case (#zitadel) { "zitadel" };
+          };
+
+          Debug.print("🔍 BACKEND: ===== CACHED USER DATA DETAILS =====");
+          Debug.print("🔍 BACKEND: Username: " # usernameText);
+          Debug.print("🔍 BACKEND: Provider: " # providerText);
+          Debug.print("🔍 BACKEND: Followers: " # followersText);
+          Debug.print("🔍 BACKEND: Following: " # followingText);
+          Debug.print("🔍 BACKEND: Name: " # (switch (cached.user.name) { case (?n) n; case (null) "null" }));
+          Debug.print("🔍 BACKEND: Email: " # (switch (cached.user.email) { case (?e) e; case (null) "null" }));
+          Debug.print("🔍 BACKEND: Location: " # (switch (cached.user.location) { case (?l) l; case (null) "null" }));
+          Debug.print("🔍 BACKEND: Website: " # (switch (cached.user.website) { case (?w) w; case (null) "null" }));
+          Debug.print("🔍 BACKEND: Bio: " # (switch (cached.user.bio) { case (?b) b; case (null) "null" }));
+          Debug.print("🔍 BACKEND: Verified: " # (switch (cached.user.verified) { case (?v) (if (v) "true" else "false"); case (null) "null" }));
+          Debug.print("🔍 BACKEND: Email Verified: " # (switch (cached.user.email_verified) { case (?ev) (if (ev) "true" else "false"); case (null) "null" }));
+          Debug.print("🔍 BACKEND: Tweet Count: " # (switch (cached.user.tweet_count) { case (?tc) Nat.toText(tc); case (null) "null" }));
+          Debug.print("🔍 BACKEND: Public Repos: " # (switch (cached.user.public_repos) { case (?pr) Nat.toText(pr); case (null) "null" }));
+          Debug.print("🔍 BACKEND: Public Gists: " # (switch (cached.user.public_gists) { case (?pg) Nat.toText(pg); case (null) "null" }));
+          Debug.print("🔍 BACKEND: ===== END CACHED USER DATA =====");
+          Debug.print("🔍 BACKEND: ===== getUserData() END (CACHE HIT) =====");
           return ?cached.user;
+        } else {
+          Debug.print("🔍 BACKEND: Cache expired, will fetch fresh data");
         };
       };
-      case (null) {};
+      case (null) {
+        Debug.print("🔍 BACKEND: No cached data found");
+      };
     };
 
     // Cache expired or no cached data, fetch from external canister
-    Debug.print("Fetching fresh data for principal: " # Principal.toText(caller));
-    return await fetchUserData(caller, origin);
+    Debug.print("🔍 BACKEND: Fetching fresh data from external canister...");
+    let result = await fetchUserData(caller, origin);
+    Debug.print("🔍 BACKEND: ===== getUserData() END (FETCH) =====");
+    return result;
   };
 
   // Refresh user data (force fetch from external canister)
@@ -812,32 +898,44 @@ persistent actor {
     followerPoints : Nat;
     totalPoints : Nat;
   } {
-    Debug.print("🔍 BACKEND: calculateUserPoints for user: " # Principal.toText(user));
+    Debug.print("🔍 BACKEND: ===== calculateUserPoints() START =====");
+    Debug.print("🔍 BACKEND: Calculating points for user: " # Principal.toText(user));
 
     // Calculate challenge points by checking completion status
     var challengePoints : Nat = 0;
-    Debug.print("🔍 BACKEND: Looking up challenge statuses for user...");
+    Debug.print("🔍 BACKEND: [CHALLENGE] Looking up challenge statuses for user...");
 
     let userStatusesOpt = Trie.find(challengeStatuses, { key = user; hash = Principal.hash(user) }, Principal.equal);
 
     switch (userStatusesOpt) {
       case (?userStatuses) {
-        Debug.print("🔍 BACKEND: Found user challenge statuses, iterating...");
+        Debug.print("🔍 BACKEND: [CHALLENGE] ===== CHALLENGE STATUSES DETAILS =====");
+        Debug.print("🔍 BACKEND: [CHALLENGE] Found user challenge statuses, iterating through " # Nat.toText(Trie.size(userStatuses)) # " entries...");
         var totalChallenges = 0;
         var verifiedChallenges = 0;
+        var pendingChallenges = 0;
+        var failedChallenges = 0;
 
         for ((challengeId, status) in Trie.iter(userStatuses)) {
           totalChallenges += 1;
           let statusText = switch (status) {
-            case (#verified) { "verified" };
-            case (#pending) { "pending" };
-            case (#failed(_)) { "failed" };
+            case (#verified) {
+              verifiedChallenges += 1;
+              "verified"
+            };
+            case (#pending) {
+              pendingChallenges += 1;
+              "pending"
+            };
+            case (#failed(reason)) {
+              failedChallenges += 1;
+              "failed: " # reason
+            };
           };
-          Debug.print("🔍 BACKEND: Challenge " # Nat.toText(challengeId) # " status: " # statusText);
+          Debug.print("🔍 BACKEND: [CHALLENGE] Challenge ID " # Nat.toText(challengeId) # " status: " # statusText);
 
           if (status == #verified) {
-            verifiedChallenges += 1;
-            Debug.print("🔍 BACKEND: Processing verified challenge " # Nat.toText(challengeId));
+            Debug.print("🔍 BACKEND: [CHALLENGE] Processing verified challenge " # Nat.toText(challengeId));
 
             // Find challenge and add its points
             switch (Array.indexOf<Challenge>(
@@ -847,73 +945,129 @@ persistent actor {
             )) {
               case (?idx) {
                 let challenge = challenges[idx];
-                Debug.print("🔍 BACKEND: Found challenge, adding " # Nat.toText(challenge.points) # " points");
+                let challengeTypeText = switch (challenge.challengeType) {
+                  case (#follows(target)) { "follows user: " # target.user };
+                };
+                Debug.print("🔍 BACKEND: [CHALLENGE] Found challenge '" # challenge.description # "'");
+                Debug.print("🔍 BACKEND: [CHALLENGE] Challenge type: " # challengeTypeText);
+                Debug.print("🔍 BACKEND: [CHALLENGE] Challenge points: " # Nat.toText(challenge.points));
                 challengePoints += challenge.points;
+                Debug.print("🔍 BACKEND: [CHALLENGE] Running total challenge points: " # Nat.toText(challengePoints));
               };
               case (null) {
-                Debug.print("🔍 BACKEND: Challenge " # Nat.toText(challengeId) # " not found in challenges array!");
+                Debug.print("🔍 BACKEND: [CHALLENGE] ERROR: Challenge " # Nat.toText(challengeId) # " not found in challenges array!");
+                Debug.print("🔍 BACKEND: [CHALLENGE] Available challenges: " # Nat.toText(challenges.size()));
+                var i = 0;
+                for (c in challenges.vals()) {
+                  Debug.print("🔍 BACKEND: [CHALLENGE] Available challenge " # Nat.toText(i) # ": ID=" # Nat.toText(c.id) # ", Description='" # c.description # "'");
+                  i += 1;
+                };
               };
             };
           };
         };
 
-        Debug.print("🔍 BACKEND: Challenge summary - Total: " # Nat.toText(totalChallenges) # ", Verified: " # Nat.toText(verifiedChallenges) # ", Points: " # Nat.toText(challengePoints));
+        Debug.print("🔍 BACKEND: [CHALLENGE] ===== CHALLENGE SUMMARY =====");
+        Debug.print("🔍 BACKEND: [CHALLENGE] Total challenges: " # Nat.toText(totalChallenges));
+        Debug.print("🔍 BACKEND: [CHALLENGE] Verified: " # Nat.toText(verifiedChallenges));
+        Debug.print("🔍 BACKEND: [CHALLENGE] Pending: " # Nat.toText(pendingChallenges));
+        Debug.print("🔍 BACKEND: [CHALLENGE] Failed: " # Nat.toText(failedChallenges));
+        Debug.print("🔍 BACKEND: [CHALLENGE] Total challenge points: " # Nat.toText(challengePoints));
       };
       case (null) {
-        Debug.print("🔍 BACKEND: No challenge statuses found for user!");
+        Debug.print("🔍 BACKEND: [CHALLENGE] No challenge statuses found for user - user has never attempted any challenges");
+        Debug.print("🔍 BACKEND: [CHALLENGE] This means challengePoints will be 0");
       };
     };
 
     // Calculate follower points from cached data
-    Debug.print("🔍 BACKEND: Looking up user data for follower points...");
+    Debug.print("🔍 BACKEND: [FOLLOWER] ===== FOLLOWER POINTS CALCULATION =====");
+    Debug.print("🔍 BACKEND: [FOLLOWER] Looking up cached user data for follower points...");
+
     let followerPoints = switch (Trie.find(userDataStore, { key = user; hash = Principal.hash(user) }, Principal.equal)) {
       case (?cachedUser) {
-        Debug.print("🔍 BACKEND: Found cached user data");
-        Debug.print("🔍 BACKEND: Cache timestamp: " # Int.toText(cachedUser.timestamp));
-        Debug.print("🔍 BACKEND: Cache TTL: " # Nat.toText(cachedUser.ttl));
-        Debug.print("🔍 BACKEND: Cache valid: " # (if (isCacheValid(cachedUser)) "true" else "false"));
+        Debug.print("🔍 BACKEND: [FOLLOWER] Found cached user data");
+        Debug.print("🔍 BACKEND: [FOLLOWER] Cache timestamp: " # Int.toText(cachedUser.timestamp));
+        Debug.print("🔍 BACKEND: [FOLLOWER] Cache TTL: " # Nat.toText(cachedUser.ttl) # " seconds");
+        Debug.print("🔍 BACKEND: [FOLLOWER] Cache valid: " # (if (isCacheValid(cachedUser)) "YES" else "NO"));
 
         if (isCacheValid(cachedUser)) {
+          Debug.print("🔍 BACKEND: [FOLLOWER] ===== CACHED USER DATA FOR FOLLOWER CALCULATION =====");
           let usernameText = switch (cachedUser.user.username) {
-          case (?username) { username };
-          case (null) { "null" };
-        };
-        let providerText = switch (cachedUser.user.provider) {
-          case (#x) { "x" };
-          case (#github) { "github" };
-          case (#twitter) { "twitter" };
-          case (#discord) { "discord" };
-          case (#google) { "google" };
-          case (#auth0) { "auth0" };
-          case (#zitadel) { "zitadel" };
-        };
-        Debug.print("🔍 BACKEND: User data - Username: " # usernameText # ", Provider: " # providerText);
+            case (?username) { username };
+            case (null) { "null" };
+          };
+          let providerText = switch (cachedUser.user.provider) {
+            case (#x) { "x" };
+            case (#github) { "github" };
+            case (#twitter) { "twitter" };
+            case (#discord) { "discord" };
+            case (#google) { "google" };
+            case (#auth0) { "auth0" };
+            case (#zitadel) { "zitadel" };
+          };
+          Debug.print("🔍 BACKEND: [FOLLOWER] Username: " # usernameText);
+          Debug.print("🔍 BACKEND: [FOLLOWER] Provider: " # providerText);
 
           switch (cachedUser.user.followers_count) {
             case (?count) {
-              Debug.print("🔍 BACKEND: Follower count: " # Nat.toText(count));
+              Debug.print("🔍 BACKEND: [FOLLOWER] Raw follower count from cache: " # Nat.toText(count));
+              Debug.print("🔍 BACKEND: [FOLLOWER] Cache timestamp: " # Int.toText(cachedUser.timestamp));
+              let cacheAgeNanos = Time.now() - cachedUser.timestamp;
+              let cacheAgeSeconds = cacheAgeNanos / 1_000_000_000;
+              Debug.print("🔍 BACKEND: [FOLLOWER] Cache age (seconds): " # Int.toText(cacheAgeSeconds));
+
               let calculatedFollowerPoints = calculateFollowerPoints(count);
-              Debug.print("🔍 BACKEND: Calculated follower points: " # Nat.toText(calculatedFollowerPoints));
+              Debug.print("🔍 BACKEND: [FOLLOWER] ===== FOLLOWER POINTS ALGORITHM =====");
+              Debug.print("🔍 BACKEND: [FOLLOWER] Input followers: " # Nat.toText(count));
+              Debug.print("🔍 BACKEND: [FOLLOWER] Algorithm: for each 100 followers = 10 points, plus (followers % 100) / 10");
+              Debug.print("🔍 BACKEND: [FOLLOWER] Calculation steps:");
+
+              // Show detailed calculation
+              var points : Nat = 0;
+              var score : Nat = count;
+              var step = 0;
+              while (score > 100) {
+                points += 10;
+                score := score / 10;
+                step += 1;
+                Debug.print("🔍 BACKEND: [FOLLOWER] Step " # Nat.toText(step) # ": score=" # Nat.toText(score * 10) # ", points=" # Nat.toText(points));
+              };
+              points += score / 10;
+              Debug.print("🔍 BACKEND: [FOLLOWER] Final step: remaining=" # Nat.toText(score) # ", bonus points=" # Nat.toText(score / 10));
+
+              Debug.print("🔍 BACKEND: [FOLLOWER] Final calculated follower points: " # Nat.toText(calculatedFollowerPoints));
               calculatedFollowerPoints;
             };
             case (null) {
-              Debug.print("🔍 BACKEND: No follower count in user data");
+              Debug.print("🔍 BACKEND: [FOLLOWER] ERROR: No follower count in cached user data!");
+              Debug.print("🔍 BACKEND: [FOLLOWER] Available user data fields:");
+              Debug.print("🔍 BACKEND: [FOLLOWER] - followers_count: null");
+              Debug.print("🔍 BACKEND: [FOLLOWER] - following_count: " # (switch (cachedUser.user.following_count) { case (?fc) Nat.toText(fc); case (null) "null" }));
+              Debug.print("🔍 BACKEND: [FOLLOWER] - tweet_count: " # (switch (cachedUser.user.tweet_count) { case (?tc) Nat.toText(tc); case (null) "null" }));
+              Debug.print("🔍 BACKEND: [FOLLOWER] - public_repos: " # (switch (cachedUser.user.public_repos) { case (?pr) Nat.toText(pr); case (null) "null" }));
               0;
             };
           };
         } else {
-          Debug.print("🔍 BACKEND: Cache is invalid, skipping follower points");
+          Debug.print("🔍 BACKEND: [FOLLOWER] Cache is stale/expired, cannot calculate follower points");
           0;
         };
       };
       case (null) {
-        Debug.print("🔍 BACKEND: No cached user data found for user!");
+        Debug.print("🔍 BACKEND: [FOLLOWER] ERROR: No cached user data found for user!");
+        Debug.print("🔍 BACKEND: [FOLLOWER] This means user has never logged in or data was never cached");
         0;
       };
     };
 
     let totalPoints = challengePoints + followerPoints;
-    Debug.print("🔍 BACKEND: Final calculation - Challenge: " # Nat.toText(challengePoints) # ", Follower: " # Nat.toText(followerPoints) # ", Total: " # Nat.toText(totalPoints));
+
+    Debug.print("🔍 BACKEND: ===== FINAL CALCULATION =====");
+    Debug.print("🔍 BACKEND: Challenge Points: " # Nat.toText(challengePoints));
+    Debug.print("🔍 BACKEND: Follower Points: " # Nat.toText(followerPoints));
+    Debug.print("🔍 BACKEND: TOTAL POINTS: " # Nat.toText(totalPoints));
+    Debug.print("🔍 BACKEND: ===== calculateUserPoints() END =====");
 
     return {
       challengePoints = challengePoints;
@@ -928,11 +1082,32 @@ persistent actor {
     followerPoints : Nat;
     totalPoints : Nat;
   } {
-    Debug.print("🔍 BACKEND: getUserPoints called");
-    Debug.print("🔍 BACKEND: Caller principal: " # Principal.toText(caller));
+    Debug.print("🔍 BACKEND: ===== getUserPoints() START =====");
+    Debug.print("🔍 BACKEND: getUserPoints called for principal: " # Principal.toText(caller));
+    Debug.print("🔍 BACKEND: Current time: " # Int.toText(Time.now()));
 
+    // Check if user has stored points
+    let storedPointsOpt = Trie.find(userPoints, { key = caller; hash = Principal.hash(caller) }, Principal.equal);
+    switch (storedPointsOpt) {
+      case (?storedPoints) {
+        Debug.print("🔍 BACKEND: Found stored points for user:");
+        Debug.print("🔍 BACKEND:   Challenge Points: " # Nat.toText(storedPoints.challengePoints));
+        Debug.print("🔍 BACKEND:   Follower Points: " # Nat.toText(storedPoints.followerPoints));
+        Debug.print("🔍 BACKEND:   Total Points: " # Nat.toText(storedPoints.totalPoints));
+      };
+      case (null) {
+        Debug.print("🔍 BACKEND: No stored points found for user - this should not happen!");
+      };
+    };
+
+    Debug.print("🔍 BACKEND: Calling calculateUserPoints()...");
     let calculatedPoints = calculateUserPoints(caller);
-    Debug.print("🔍 BACKEND: Calculated points - Challenge: " # Nat.toText(calculatedPoints.challengePoints) # ", Follower: " # Nat.toText(calculatedPoints.followerPoints) # ", Total: " # Nat.toText(calculatedPoints.totalPoints));
+
+    Debug.print("🔍 BACKEND: ===== CALCULATION RESULTS =====");
+    Debug.print("🔍 BACKEND: Challenge Points: " # Nat.toText(calculatedPoints.challengePoints));
+    Debug.print("🔍 BACKEND: Follower Points: " # Nat.toText(calculatedPoints.followerPoints));
+    Debug.print("🔍 BACKEND: Total Points: " # Nat.toText(calculatedPoints.totalPoints));
+    Debug.print("🔍 BACKEND: ===== getUserPoints() END =====");
 
     return {
       challengePoints = calculatedPoints.challengePoints;
@@ -950,6 +1125,9 @@ persistent actor {
     username : ?Text;
     name : ?Text;
   }] {
+    Debug.print("🔍 BACKEND: ===== getLeaderboard() START =====");
+    Debug.print("🔍 BACKEND: Calculating leaderboard for all users...");
+
     // Convert Trie to array for sorting
     var leaderboard : [{
       principal : Principal;
@@ -960,8 +1138,14 @@ persistent actor {
       name : ?Text;
     }] = [];
 
+    let totalUsers = Trie.size(userPoints);
+    Debug.print("🔍 BACKEND: Processing " # Nat.toText(totalUsers) # " users for leaderboard...");
+
+    var processedUsers = 0;
     // Iterate through all users with stored points
     for ((principal, _) in Trie.iter(userPoints)) {
+      processedUsers += 1;
+      Debug.print("🔍 BACKEND: [LEADERBOARD] Processing user " # Nat.toText(processedUsers) # "/" # Nat.toText(totalUsers) # ": " # Principal.toText(principal));
       // Calculate points dynamically (same as getUserPoints)
       let calculatedPoints = calculateUserPoints(principal);
 
@@ -1025,6 +1209,13 @@ persistent actor {
       leaderboard,
       func(a, b) = Nat.compare(b.totalPoints, a.totalPoints),
     );
+
+    Debug.print("🔍 BACKEND: ===== getLeaderboard() END =====");
+    Debug.print("🔍 BACKEND: Leaderboard calculated for " # Nat.toText(Array.size(leaderboard)) # " users");
+    if (Array.size(leaderboard) > 0) {
+      let topUser = leaderboard[0];
+      Debug.print("🔍 BACKEND: Top user: " # Principal.toText(topUser.principal) # " with " # Nat.toText(topUser.totalPoints) # " points");
+    };
 
     return leaderboard;
   };
@@ -1655,6 +1846,42 @@ persistent actor {
 
   public query func greet(name : Text) : async Text {
     return "Hello, " # name # "!";
+  };
+
+  // Debug function to test logging system
+  public query func testDebugLogging() : async Text {
+    Debug.print("🔍 BACKEND: ===== TEST DEBUG LOGGING =====");
+    Debug.print("🔍 BACKEND: [TEST] Debug logging system is working!");
+    Debug.print("🔍 BACKEND: [TEST] Current time: " # Int.toText(Time.now()));
+    Debug.print("🔍 BACKEND: [TEST] Total challenges: " # Nat.toText(challenges.size()));
+    Debug.print("🔍 BACKEND: [TEST] Total cached users: " # Nat.toText(Trie.size(userDataStore)));
+    Debug.print("🔍 BACKEND: [TEST] Total user points entries: " # Nat.toText(Trie.size(userPoints)));
+
+    // Show all challenges
+    Debug.print("🔍 BACKEND: [TEST] ===== AVAILABLE CHALLENGES =====");
+    var i = 0;
+    for (challenge in challenges.vals()) {
+      let challengeTypeText = switch (challenge.challengeType) {
+        case (#follows(target)) { "follows user: " # target.user };
+      };
+      Debug.print("🔍 BACKEND: [TEST] Challenge " # Nat.toText(i) # ": ID=" # Nat.toText(challenge.id) # ", Description='" # challenge.description # "', Type=" # challengeTypeText # ", Points=" # Nat.toText(challenge.points));
+      i += 1;
+    };
+
+    // Show all users with points
+    Debug.print("🔍 BACKEND: [TEST] ===== USERS WITH POINTS =====");
+    i := 0;
+    for ((principal, points) in Trie.iter(userPoints)) {
+      Debug.print("🔍 BACKEND: [TEST] User " # Nat.toText(i) # ": " # Principal.toText(principal));
+      Debug.print("🔍 BACKEND: [TEST]   Challenge Points: " # Nat.toText(points.challengePoints));
+      Debug.print("🔍 BACKEND: [TEST]   Follower Points: " # Nat.toText(points.followerPoints));
+      Debug.print("🔍 BACKEND: [TEST]   Total Points: " # Nat.toText(points.totalPoints));
+      Debug.print("🔍 BACKEND: [TEST]   Last Updated: " # Int.toText(points.lastUpdated));
+      i += 1;
+    };
+
+    Debug.print("🔍 BACKEND: ===== TEST COMPLETE =====");
+    return "Debug logging test completed. Check backend logs for detailed output.";
   };
 
   // Admin function to unblock a permanently blocked user
