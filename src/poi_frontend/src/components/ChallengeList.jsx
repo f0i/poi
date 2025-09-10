@@ -20,6 +20,7 @@ function ChallengeList() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [rateLimitedChallenges, setRateLimitedChallenges] = useState({});
   const [editingChallenge, setEditingChallenge] = useState(null);
+  const [updatingChallenge, setUpdatingChallenge] = useState(null);
   const [editForm, setEditForm] = useState({
     description: "",
     userToFollow: "",
@@ -142,23 +143,53 @@ function ChallengeList() {
 
   const handleUpdateChallenge = async (e) => {
     e.preventDefault();
-    if (!editingChallenge) return;
+    console.log("🔍 DEBUG: handleUpdateChallenge called", { editingChallenge, editForm });
 
+    if (!editingChallenge) {
+      console.log("🔍 DEBUG: No editingChallenge, returning");
+      return;
+    }
+
+    // Validate form
+    if (!editForm.description.trim() || !editForm.userToFollow.trim() || !editForm.points) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    setUpdatingChallenge(editingChallenge);
     try {
       const challengeType = { follows: { user: editForm.userToFollow } };
       const points = BigInt(editForm.points);
-      await challengeService.updateChallenge(
+      console.log("🔍 DEBUG: Calling challengeService.updateChallenge", {
+        editingChallenge,
+        description: editForm.description,
+        challengeType,
+        points,
+        markdownMessage: editForm.markdownMessage
+      });
+
+      const result = await challengeService.updateChallenge(
         editingChallenge,
         editForm.description,
         challengeType,
         points,
         editForm.markdownMessage || null,
       );
+
+      console.log("🔍 DEBUG: challengeService.updateChallenge result:", result);
+
+      // Show success message
+      alert('Challenge updated successfully!');
+
       setEditingChallenge(null);
       setEditForm({ description: "", userToFollow: "", points: "", markdownMessage: "" });
       loadChallenges(); // Refresh the list
     } catch (error) {
       console.error("Failed to update challenge:", error);
+      // Show error to user
+      alert(`Failed to update challenge: ${error.message || 'Unknown error'}`);
+    } finally {
+      setUpdatingChallenge(null);
     }
   };
 
@@ -957,18 +988,30 @@ function ChallengeList() {
                                />
                              </div>
 
-                             <div className="flex space-x-3">
-                               <button type="submit" className="btn-primary text-sm">
-                                 Update Challenge
-                               </button>
-                               <button
-                                 type="button"
-                                 onClick={() => setEditingChallenge(null)}
-                                 className="btn-secondary text-sm"
-                               >
-                                 Cancel
-                               </button>
-                             </div>
+                              <div className="flex space-x-3">
+                                <button
+                                  type="submit"
+                                  disabled={updatingChallenge === editingChallenge}
+                                  className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {updatingChallenge === editingChallenge ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                      Updating...
+                                    </>
+                                  ) : (
+                                    'Update Challenge'
+                                  )}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingChallenge(null)}
+                                  disabled={updatingChallenge === editingChallenge}
+                                  className="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                            </form>
                          </div>
                        )}
