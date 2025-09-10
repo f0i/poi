@@ -21,9 +21,17 @@ function AuthApp() {
 
   return (
     <div className="min-h-screen bg-slate-900">
-      {!isAuthenticated ? (
-        <div className="min-h-screen flex items-center justify-center px-4">
-          <div className="card text-center max-w-md mx-auto">
+      {/* Show leaderboard in background when not authenticated */}
+      {!isAuthenticated && (
+        <div className="min-h-screen">
+          <Leaderboard />
+        </div>
+      )}
+
+      {/* Sign-in overlay for unauthenticated users */}
+      {!isAuthenticated && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card text-center max-w-md mx-auto relative">
             <div className="mb-6">
               <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
@@ -41,11 +49,16 @@ function AuthApp() {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">
-                Welcome to POI
+                Join POI
               </h2>
-              <p className="text-slate-400">
-                Earn points by completing challenges and climb the leaderboard
+              <p className="text-slate-400 mb-4">
+                Sign in to earn points, complete challenges, and climb the leaderboard!
               </p>
+              <div className="bg-slate-700/50 rounded-lg p-3 mb-4">
+                <p className="text-sm text-slate-300">
+                  👆 See the leaderboard above? That's what you can achieve!
+                </p>
+              </div>
             </div>
             <button
               onClick={login}
@@ -57,9 +70,15 @@ function AuthApp() {
               Sign in with X<br />
               <span className="text-sm opacity-75">powered by Identify</span>
             </button>
+            <p className="text-xs text-slate-500 mt-4">
+              Your data is secure and only used for POI functionality
+            </p>
           </div>
         </div>
-      ) : (
+      )}
+
+      {/* Authenticated app */}
+      {isAuthenticated && (
         <div className="flex min-h-screen">
           {/* Compact Sidebar */}
           <div className="w-20 bg-slate-800 border-r border-slate-700 flex flex-col items-center py-6">

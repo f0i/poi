@@ -109,9 +109,7 @@ function Leaderboard() {
     }
   };
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  // Leaderboard is now available without authentication
 
   return (
     <div className="space-y-8">
@@ -493,8 +491,8 @@ function Leaderboard() {
             </div>
           )}
 
-          {/* Current User Section */}
-          {userPoints && (
+          {/* Current User Section or Sign Up Prompt */}
+          {userPoints ? (
             <div className="card">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-white flex items-center">
@@ -632,6 +630,114 @@ function Leaderboard() {
                     </p>
                   </div>
                 </button>
+              </div>
+            </div>
+          ) : (
+            /* Sign Up to Compete Section for Unauthenticated Users */
+            <div className="card">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-8 h-8 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">
+                  Ready to Compete?
+                </h3>
+                <p className="text-slate-400 text-sm mb-4">
+                  Join the leaderboard and start earning points today!
+                </p>
+              </div>
+
+              {/* Benefits */}
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
+                  <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">Complete Challenges</p>
+                    <p className="text-slate-400 text-xs">Earn points by following influencers</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">Climb the Leaderboard</p>
+                    <p className="text-slate-400 text-xs">Get recognized for your influence</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
+                  <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">Earn Rewards</p>
+                    <p className="text-slate-400 text-xs">Points based on your follower count</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Call to Action */}
+              <div className="text-center">
+                <p className="text-slate-400 text-sm mb-4">
+                  Sign in now to see your ranking and start earning points!
+                </p>
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-4">
+                  <p className="text-white font-medium text-sm">
+                    🚀 Your journey to the top starts here!
+                  </p>
+                </div>
               </div>
             </div>
           )}
