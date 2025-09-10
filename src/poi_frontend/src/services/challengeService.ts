@@ -8,6 +8,8 @@ export interface Challenge {
   description: string;
   challengeType: ChallengeType;
   points: bigint;
+  markdownMessage?: string | null;
+  disabled?: boolean;
 }
 
 export class ChallengeService {
@@ -59,6 +61,7 @@ export class ChallengeService {
     description: string,
     challengeType: ChallengeType,
     points: bigint,
+    markdownMessage?: string | null,
   ): Promise<bigint | null> {
     try {
       const actor = this.getActor();
@@ -66,6 +69,7 @@ export class ChallengeService {
         description,
         challengeType,
         points,
+        markdownMessage,
       );
       return result;
     } catch (error) {
@@ -79,6 +83,7 @@ export class ChallengeService {
     description: string,
     challengeType: ChallengeType,
     points: bigint,
+    markdownMessage?: string | null,
   ): Promise<boolean> {
     try {
       const actor = this.getActor();
@@ -87,10 +92,33 @@ export class ChallengeService {
         description,
         challengeType,
         points,
+        markdownMessage,
       );
       return result;
     } catch (error) {
       console.error("Failed to update challenge:", error);
+      return false;
+    }
+  }
+
+  async disableChallenge(id: bigint): Promise<boolean> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.disableChallenge(id);
+      return result;
+    } catch (error) {
+      console.error("Failed to disable challenge:", error);
+      return false;
+    }
+  }
+
+  async enableChallenge(id: bigint): Promise<boolean> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.enableChallenge(id);
+      return result;
+    } catch (error) {
+      console.error("Failed to enable challenge:", error);
       return false;
     }
   }

@@ -245,7 +245,7 @@ function Leaderboard() {
               </div>
             ) : (
               <div className="relative">
-                <div className="space-y-3 max-h-[800px] overflow-y-auto scrollbar-hide">
+                 <div className="space-y-3">
                   {[...leaderboard, ...generatePlaceholders(leaderboard.length)].map((user, index) => {
                     const rank = index + 1;
                     const isCurrentUser =

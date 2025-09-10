@@ -135,7 +135,7 @@ function Settings() {
 
     if (
       !window.confirm(
-        `Are you sure you want to delete user ${userPrincipal}? This will permanently remove all their data including points, challenges, and verification history. This action cannot be undone.`,
+        `Are you sure you want to delete user ${userPrincipal}? This will permanently remove ALL data for this user including points, challenges, and verification history. This action cannot be undone.`,
       )
     ) {
       return;
@@ -729,7 +729,7 @@ function Settings() {
                                     Warning: Destructive Action
                                   </h5>
                                   <p className="text-yellow-300 text-sm mt-1">
-                                    <strong>Delete User:</strong> Permanently removes ALL user data including points, challenges, and verification history. This action cannot be undone.
+                                     <strong>Delete User:</strong> Permanently removes ALL data for the specified user including points, challenges, and verification history. This action cannot be undone.
                                   </p>
                                 </div>
                               </div>

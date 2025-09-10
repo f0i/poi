@@ -53,6 +53,8 @@ persistent actor {
     description : Text;
     challengeType : ChallengeType;
     points : Nat; // Points awarded for completing this challenge
+    markdownMessage : ?Text; // Optional additional information in markdown format
+    disabled : Bool; // Whether this challenge is disabled (no new verifications allowed)
   };
 
   // Storage for cached user data
@@ -500,7 +502,7 @@ persistent actor {
   // Challenge CRUD operations
 
   // Create a new challenge
-  public shared ({ caller }) func createChallenge(description : Text, challengeType : ChallengeType, points : Nat) : async Nat {
+  public shared ({ caller }) func createChallenge(description : Text, challengeType : ChallengeType, points : Nat, markdownMessage : ?Text) : async Nat {
     // Check if caller is admin
     if (not isCallerAdmin(caller)) {
       Debug.trap("Only admin can create challenges");
@@ -514,6 +516,8 @@ persistent actor {
       description = description;
       challengeType = challengeType;
       points = points;
+      markdownMessage = markdownMessage;
+      disabled = false;
     };
     challenges := Array.append(challenges, [newChallenge]);
 
@@ -533,13 +537,13 @@ persistent actor {
   };
 
   // Update a challenge
-  public shared ({ caller }) func updateChallenge(id : Nat, description : Text, challengeType : ChallengeType, points : Nat) : async Bool {
+  public shared ({ caller }) func updateChallenge(id : Nat, description : Text, challengeType : ChallengeType, points : Nat, markdownMessage : ?Text) : async Bool {
     // Check if caller is admin
     if (not isCallerAdmin(caller)) {
       Debug.trap("Only admin can update challenges");
     };
 
-    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }); points = 0 }, challenges, func(a, b) = a.id == b.id) else {
+    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = null; disabled = false }, challenges, func(a, b) = a.id == b.id) else {
       Debug.print("Challenge not found for update: " # Nat.toText(id));
       return false;
     };
@@ -549,6 +553,8 @@ persistent actor {
       description = description;
       challengeType = challengeType;
       points = points;
+      markdownMessage = markdownMessage;
+      disabled = challenges[index].disabled; // Preserve existing disabled status
     };
     challenges := Array.tabulate<Challenge>(
       challenges.size(),
@@ -560,6 +566,66 @@ persistent actor {
     return true;
   };
 
+  // Disable a challenge (no new verifications allowed)
+  public shared ({ caller }) func disableChallenge(id : Nat) : async Bool {
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can disable challenges");
+    };
+
+    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = null; disabled = false }, challenges, func(a, b) = a.id == b.id) else {
+      Debug.print("Challenge not found for disable: " # Nat.toText(id));
+      return false;
+    };
+
+    let disabledChallenge : Challenge = {
+      id = challenges[index].id;
+      description = challenges[index].description;
+      challengeType = challenges[index].challengeType;
+      points = challenges[index].points;
+      markdownMessage = challenges[index].markdownMessage;
+      disabled = true;
+    };
+    challenges := Array.tabulate<Challenge>(
+      challenges.size(),
+      func(i) {
+        if (i == index) { disabledChallenge } else { challenges[i] };
+      },
+    );
+    Debug.print("Challenge disabled by admin: " # Nat.toText(id));
+    return true;
+  };
+
+  // Enable a challenge (allow new verifications)
+  public shared ({ caller }) func enableChallenge(id : Nat) : async Bool {
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can enable challenges");
+    };
+
+    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = null; disabled = false }, challenges, func(a, b) = a.id == b.id) else {
+      Debug.print("Challenge not found for enable: " # Nat.toText(id));
+      return false;
+    };
+
+    let enabledChallenge : Challenge = {
+      id = challenges[index].id;
+      description = challenges[index].description;
+      challengeType = challenges[index].challengeType;
+      points = challenges[index].points;
+      markdownMessage = challenges[index].markdownMessage;
+      disabled = false;
+    };
+    challenges := Array.tabulate<Challenge>(
+      challenges.size(),
+      func(i) {
+        if (i == index) { enabledChallenge } else { challenges[i] };
+      },
+    );
+    Debug.print("Challenge enabled by admin: " # Nat.toText(id));
+    return true;
+  };
+
   // Delete a challenge
   public shared ({ caller }) func deleteChallenge(id : Nat) : async Bool {
     // Check if caller is admin
@@ -567,7 +633,7 @@ persistent actor {
       Debug.trap("Only admin can delete challenges");
     };
 
-    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }); points = 0 }, challenges, func(a, b) = a.id == b.id) else {
+    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = null; disabled = false }, challenges, func(a, b) = a.id == b.id) else {
       Debug.print("Challenge not found for deletion: " # Nat.toText(id));
       return false;
     };
@@ -797,7 +863,7 @@ persistent actor {
           for ((challengeId, status) in Trie.iter(userStatuses)) {
             // Find challenge points
             let challengePoints = switch (Array.indexOf<Challenge>(
-              { id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0 },
+              { id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = null; disabled = false },
               challenges,
               func(a, b) = a.id == b.id
             )) {
@@ -862,7 +928,7 @@ persistent actor {
   // Update user points after challenge completion
   private func awardChallengePoints(caller : Principal, challengeId : Nat) : () {
     // Find the challenge to get its points value
-    let ?index = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0 }, challenges, func(a, b) = a.id == b.id) else {
+    let ?index = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = null; disabled = false }, challenges, func(a, b) = a.id == b.id) else {
       Debug.print("Challenge not found for points award: " # Nat.toText(challengeId));
       return;
     };
@@ -979,7 +1045,7 @@ persistent actor {
 
             // Find challenge and add its points
             switch (Array.indexOf<Challenge>(
-              { id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0 },
+              { id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = null; disabled = false },
               challenges,
               func(a, b) = a.id == b.id
             )) {
@@ -1403,7 +1469,7 @@ persistent actor {
     };
 
     // Find the challenge
-    let ?index = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0 }, challenges, func(a, b) = a.id == b.id) else {
+    let ?index = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = null; disabled = false }, challenges, func(a, b) = a.id == b.id) else {
       return #error("Challenge not found");
     };
     let challenge = challenges[index];
