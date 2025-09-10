@@ -87,14 +87,15 @@ export const AuthProvider = ({ children }) => {
         },
       };
 
-      // Set maximum session duration (30 days) and disable idle timeout
-      if (process.env.DFX_NETWORK === "ic") {
-        loginOptions.identityProvider =
-          "https://login.f0i.de?provider=x&maxTimeToLive=2592000000000000&disableIdle=true";
-      } else {
-        const baseUrl = `http://localhost:4943/?canisterId=${process.env.CANISTER_ID_INTERNET_IDENTITY}`;
-        loginOptions.identityProvider = `${baseUrl}&maxTimeToLive=2592000000000000&disableIdle=true`;
-      }
+       // Set maximum session duration (30 days) and disable idle timeout
+       loginOptions.maxTimeToLive = 2592000000000000n; // 30 days in nanoseconds
+       loginOptions.disableIdle = true;
+
+       if (process.env.DFX_NETWORK === "ic") {
+         loginOptions.identityProvider = "https://login.f0i.de?provider=x";
+       } else {
+         loginOptions.identityProvider = `http://localhost:4943/?canisterId=${process.env.CANISTER_ID_INTERNET_IDENTITY}`;
+       }
 
       await authClient.login(loginOptions);
     } catch (error) {
