@@ -221,6 +221,11 @@ function Settings() {
     return null;
   }
 
+  // Completely hide settings page for non-admins when admin is already set
+  if (currentAdmin && !isAdmin) {
+    return null;
+  }
+
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-6">
@@ -1005,56 +1010,7 @@ function Settings() {
         </div>
         )}
 
-        {/* Non-admin message */}
-        {!isAdmin && (
-          <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-semibold text-white flex items-center">
-                <svg
-                  className="w-5 h-5 mr-2 text-yellow-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-                Admin Access Required
-              </h4>
-            </div>
 
-            <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <svg
-                  className="w-5 h-5 text-yellow-500 mt-0.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-                <div>
-                  <h5 className="text-yellow-400 font-medium">
-                    Administrative Settings
-                  </h5>
-                  <p className="text-yellow-300 text-sm mt-1">
-                    These settings are only accessible to the system administrator.
-                    If you need to perform administrative tasks, please contact the admin.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
