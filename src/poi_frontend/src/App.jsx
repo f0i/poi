@@ -83,7 +83,7 @@ function AuthApp() {
       {isAuthenticated && (
         <div className="flex min-h-screen">
           {/* Compact Sidebar */}
-          <div className="w-20 bg-slate-800 border-r border-slate-700 flex flex-col items-center py-6">
+          <div className="fixed left-0 top-0 h-screen w-20 bg-slate-800 border-r border-slate-700 flex flex-col items-center py-6 z-10">
             {/* Logo */}
             <div className="mb-8">
               <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
@@ -295,7 +295,7 @@ function AuthApp() {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 flex flex-col min-h-screen">
+          <div className="flex-1 flex flex-col min-h-screen ml-20">
             {/* Compact Header */}
             <header className="bg-slate-800 border-b border-slate-700 px-8 py-4">
               <div className="flex items-center justify-between">
