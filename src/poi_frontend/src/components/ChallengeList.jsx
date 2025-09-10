@@ -921,106 +921,128 @@ function ChallengeList() {
                         </div>
                        )}
 
-                       {/* Edit Form */}
-                       {editingChallenge === challenge.id && (
-                         <div className="mt-4 pt-4 border-t border-slate-600">
-                           <form onSubmit={handleUpdateChallenge} className="space-y-4">
-                             <h5 className="text-white font-medium">Edit Challenge</h5>
 
-                             <div>
-                               <label className="label text-sm">Challenge Description</label>
-                               <input
-                                 type="text"
-                                 value={editForm.description}
-                                 onChange={(e) =>
-                                   setEditForm({
-                                     ...editForm,
-                                     description: e.target.value,
-                                   })
-                                 }
-                                 className="input-field w-full"
-                                 required
-                               />
-                             </div>
-
-                             <div>
-                               <label className="label text-sm">User Handle / Username</label>
-                               <input
-                                 type="text"
-                                 value={editForm.userToFollow}
-                                 onChange={(e) =>
-                                   setEditForm({
-                                     ...editForm,
-                                     userToFollow: e.target.value,
-                                   })
-                                 }
-                                 className="input-field w-full"
-                                 required
-                               />
-                             </div>
-
-                             <div>
-                               <label className="label text-sm">Points Reward</label>
-                               <input
-                                 type="number"
-                                 value={editForm.points}
-                                 onChange={(e) =>
-                                   setEditForm({ ...editForm, points: e.target.value })
-                                 }
-                                 className="input-field w-full"
-                                 min="1"
-                                 required
-                               />
-                             </div>
-
-                             <div>
-                               <label className="label text-sm">Additional Information (Markdown)</label>
-                               <textarea
-                                 value={editForm.markdownMessage}
-                                 onChange={(e) =>
-                                   setEditForm({
-                                     ...editForm,
-                                     markdownMessage: e.target.value,
-                                   })
-                                 }
-                                 className="input-field w-full"
-                                 rows={3}
-                               />
-                             </div>
-
-                              <div className="flex space-x-3">
-                                <button
-                                  type="submit"
-                                  disabled={updatingChallenge === editingChallenge}
-                                  className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {updatingChallenge === editingChallenge ? (
-                                    <>
-                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                      Updating...
-                                    </>
-                                  ) : (
-                                    'Update Challenge'
-                                  )}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingChallenge(null)}
-                                  disabled={updatingChallenge === editingChallenge}
-                                  className="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                           </form>
-                         </div>
-                       )}
                      </div>
                    </div>
-                 ))}
-               </div>
-            </div>
-          )}
+                  ))}
+
+                  {/* Edit Form - Separate section below challenges */}
+                  {challenges.map((challenge) => (
+                    editingChallenge === challenge.id && (
+                      <div
+                        key={`edit-${challenge.id.toString()}`}
+                        className="mt-6 bg-slate-700 rounded-lg p-6 border border-slate-600"
+                      >
+                        <form onSubmit={handleUpdateChallenge} className="space-y-4">
+                          <h5 className="text-white font-medium flex items-center">
+                            <svg
+                              className="w-5 h-5 mr-2 text-blue-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                            Edit Challenge
+                          </h5>
+
+                          <div>
+                            <label className="label text-sm">Challenge Description</label>
+                            <input
+                              type="text"
+                              value={editForm.description}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  description: e.target.value,
+                                })
+                              }
+                              className="input-field w-full"
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <label className="label text-sm">User Handle / Username</label>
+                            <input
+                              type="text"
+                              value={editForm.userToFollow}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  userToFollow: e.target.value,
+                                })
+                              }
+                              className="input-field w-full"
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <label className="label text-sm">Points Reward</label>
+                            <input
+                              type="number"
+                              value={editForm.points}
+                              onChange={(e) =>
+                                setEditForm({ ...editForm, points: e.target.value })
+                              }
+                              className="input-field w-full"
+                              min="1"
+                              required
+                            />
+                          </div>
+
+                          <div>
+                            <label className="label text-sm">Additional Information (Markdown)</label>
+                            <textarea
+                              value={editForm.markdownMessage}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  markdownMessage: e.target.value,
+                                })
+                              }
+                              className="input-field w-full"
+                              rows={3}
+                            />
+                          </div>
+
+                          <div className="flex space-x-3">
+                            <button
+                              type="submit"
+                              disabled={updatingChallenge === editingChallenge}
+                              className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {updatingChallenge === editingChallenge ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                  Updating...
+                                </>
+                              ) : (
+                                'Update Challenge'
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingChallenge(null)}
+                              disabled={updatingChallenge === editingChallenge}
+                              className="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    )
+                  )).filter(Boolean)}
+                </div>
+             </div>
+           )}
         </div>
       )}
     </div>
