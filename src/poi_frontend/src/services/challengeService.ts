@@ -273,7 +273,7 @@ export class ChallengeService {
       principal: any;
       username: string | null;
       name: string | null;
-      provider: string;
+      provider: { github: null } | { twitter: null } | { discord: null } | { google: null } | { auth0: null } | { zitadel: null } | { x: null };
       followersCount: bigint | null;
       cacheValid: boolean;
       challengePoints: bigint;

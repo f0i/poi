@@ -497,13 +497,13 @@ function Settings() {
                                       </div>
                                     </div>
 
-                                    <div className="text-xs text-slate-400 mb-2">
-                                      Principal:{" "}
-                                      {user.principal.toString().slice(0, 20)}
-                                      ...
-                                      <br />
-                                      Provider: {user.provider} | Cache:{" "}
-                                      {user.cacheValid ? "Valid" : "Invalid"}
+                                     <div className="text-xs text-slate-400 mb-2">
+                                       Principal:{" "}
+                                       {user.principal.toString().slice(0, 20)}
+                                       ...
+                                       <br />
+                                       Provider: {Object.keys(user.provider)[0]} | Cache:{" "}
+                                       {user.cacheValid ? "Valid" : "Invalid"}
                                       {user.followersCount && (
                                         <span>
                                           {" "}
