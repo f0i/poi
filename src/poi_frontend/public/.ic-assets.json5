@@ -10,7 +10,7 @@
         "security_policy": "standard",
 
         "headers": {
-            "Content-Security-Policy": "img-src 'self' data: https://pbs.twimg.com https://abs.twimg.com;"
+            "Content-Security-Policy": "img-src 'self' data: https://*.twimg.com;"
         },
 
         // Uncomment to disable the warning about using the
