@@ -325,17 +325,5 @@ export class ChallengeService {
     }
   }
 
-  async clearUserVerificationData(userPrincipal: any): Promise<{
-    success: boolean;
-    message: string;
-  }> {
-    try {
-      const actor = this.getActor();
-      const result = await actor.clearUserVerificationData(userPrincipal);
-      return result;
-    } catch (error) {
-      console.error("Failed to clear user verification data:", error);
-      throw error;
-    }
-  }
+
 }

@@ -22,8 +22,7 @@ function Settings() {
   const [userPrincipal, setUserPrincipal] = useState("");
   const [deletingUser, setDeletingUser] = useState(false);
   const [deleteResult, setDeleteResult] = useState(null);
-  const [clearingVerification, setClearingVerification] = useState(false);
-  const [clearResult, setClearResult] = useState(null);
+
 
   const challengeService = new ChallengeService(identity);
 
@@ -161,38 +160,7 @@ function Settings() {
     }
   };
 
-  const handleClearVerificationData = async () => {
-    if (!userPrincipal.trim()) {
-      alert("Please enter a user principal");
-      return;
-    }
 
-    if (
-      !window.confirm(
-        `Are you sure you want to clear verification data for user ${userPrincipal}? This will reset their verification attempts, lockouts, and consecutive failures, but keep their points and challenge progress.`,
-      )
-    ) {
-      return;
-    }
-
-    setClearingVerification(true);
-    setClearResult(null);
-    try {
-      const result = await challengeService.clearUserVerificationData(userPrincipal.trim());
-      setClearResult(result);
-      if (result.success) {
-        alert(`Verification data cleared successfully: ${result.message}`);
-        setUserPrincipal("");
-      } else {
-        alert(`Failed to clear verification data: ${result.message}`);
-      }
-    } catch (error) {
-      console.error("Failed to clear verification data:", error);
-      alert("Failed to clear verification data. Check console for details.");
-    } finally {
-      setClearingVerification(false);
-    }
-  };
 
   const handleSetToken = async (e) => {
     e.preventDefault();
@@ -672,103 +640,36 @@ function Settings() {
                              </p>
                            </div>
 
-                           <div className="flex space-x-3">
-                             <button
-                               onClick={handleClearVerificationData}
-                               disabled={clearingVerification || !userPrincipal.trim()}
-                               className="btn-primary text-sm"
-                             >
-                               {clearingVerification ? (
-                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                               ) : (
-                                 <>
-                                   <svg
-                                     className="w-4 h-4 mr-2 inline"
-                                     fill="none"
-                                     stroke="currentColor"
-                                     viewBox="0 0 24 24"
-                                   >
-                                     <path
-                                       strokeLinecap="round"
-                                       strokeLinejoin="round"
-                                       strokeWidth={2}
-                                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                     />
-                                   </svg>
-                                   Clear Verification Data
-                                 </>
-                               )}
-                             </button>
+                            <div className="flex justify-center">
+                              <button
+                                onClick={handleDeleteUser}
+                                disabled={deletingUser || !userPrincipal.trim()}
+                                className="btn-danger text-sm"
+                              >
+                                {deletingUser ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                ) : (
+                                  <>
+                                    <svg
+                                      className="w-4 h-4 mr-2 inline"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                      />
+                                    </svg>
+                                    Delete User
+                                  </>
+                                )}
+                              </button>
+                            </div>
 
-                             <button
-                               onClick={handleDeleteUser}
-                               disabled={deletingUser || !userPrincipal.trim()}
-                               className="btn-danger text-sm"
-                             >
-                               {deletingUser ? (
-                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                               ) : (
-                                 <>
-                                   <svg
-                                     className="w-4 h-4 mr-2 inline"
-                                     fill="none"
-                                     stroke="currentColor"
-                                     viewBox="0 0 24 24"
-                                   >
-                                     <path
-                                       strokeLinecap="round"
-                                       strokeLinejoin="round"
-                                       strokeWidth={2}
-                                       d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                     />
-                                   </svg>
-                                   Delete User
-                                 </>
-                               )}
-                             </button>
-                           </div>
-
-                           {clearResult && (
-                             <div className={`rounded-lg p-3 ${
-                               clearResult.success
-                                 ? "bg-green-900/20 border border-green-600"
-                                 : "bg-red-900/20 border border-red-600"
-                             }`}>
-                               <div className="flex items-center space-x-2">
-                                 <svg
-                                   className={`w-4 h-4 ${
-                                     clearResult.success ? "text-green-500" : "text-red-500"
-                                   }`}
-                                   fill="none"
-                                   stroke="currentColor"
-                                   viewBox="0 0 24 24"
-                                 >
-                                   {clearResult.success ? (
-                                     <path
-                                       strokeLinecap="round"
-                                       strokeLinejoin="round"
-                                       strokeWidth={2}
-                                       d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                     />
-                                   ) : (
-                                     <path
-                                       strokeLinecap="round"
-                                       strokeLinejoin="round"
-                                       strokeWidth={2}
-                                       d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                     />
-                                   )}
-                                 </svg>
-                                 <div className={`text-sm ${
-                                   clearResult.success ? "text-green-400" : "text-red-400"
-                                 }`}>
-                                   <strong>Clear Verification Data:</strong> {clearResult.message}
-                                 </div>
-                               </div>
-                             </div>
-                           )}
-
-                           {deleteResult && (
+                            {deleteResult && (
                              <div className={`rounded-lg p-3 ${
                                deleteResult.success
                                  ? "bg-green-900/20 border border-green-600"
@@ -808,33 +709,31 @@ function Settings() {
                              </div>
                            )}
 
-                           <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4">
-                             <div className="flex items-start space-x-3">
-                               <svg
-                                 className="w-5 h-5 text-yellow-500 mt-0.5"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 viewBox="0 0 24 24"
-                               >
-                                 <path
-                                   strokeLinecap="round"
-                                   strokeLinejoin="round"
-                                   strokeWidth={2}
-                                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                                 />
-                               </svg>
-                               <div>
-                                 <h5 className="text-yellow-400 font-medium">
-                                   Warning: Destructive Actions
-                                 </h5>
-                                 <p className="text-yellow-300 text-sm mt-1">
-                                   <strong>Clear Verification Data:</strong> Resets verification attempts, lockouts, and consecutive failures for a user. Their points and challenge progress remain intact.
-                                   <br />
-                                   <strong>Delete User:</strong> Permanently removes ALL user data including points, challenges, and verification history. This action cannot be undone.
-                                 </p>
-                               </div>
-                             </div>
-                           </div>
+                            <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4">
+                              <div className="flex items-start space-x-3">
+                                <svg
+                                  className="w-5 h-5 text-yellow-500 mt-0.5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                                  />
+                                </svg>
+                                <div>
+                                  <h5 className="text-yellow-400 font-medium">
+                                    Warning: Destructive Action
+                                  </h5>
+                                  <p className="text-yellow-300 text-sm mt-1">
+                                    <strong>Delete User:</strong> Permanently removes ALL user data including points, challenges, and verification history. This action cannot be undone.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
                          </div>
                        </div>
                     </div>
