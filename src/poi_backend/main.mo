@@ -10,7 +10,9 @@ import Hash "mo:base/Hash";
 import Blob "mo:base/Blob";
 import IC "ic:aaaaa-aa";
 import Json "mo:json";
+import {migration} "ChallengeMigration";
 
+(with migration)
 persistent actor {
   // External canister types
   type Provider = { #github; #twitter; #discord; #google; #auth0; #zitadel; #x };
@@ -48,14 +50,6 @@ persistent actor {
     #follows : { user : Text };
   };
 
-  // Old Challenge type for migration
-  type ChallengeV1 = {
-    id : Nat;
-    description : Text;
-    challengeType : ChallengeType;
-    points : Nat;
-  };
-
   type Challenge = {
     id : Nat;
     description : Text;
@@ -65,26 +59,10 @@ persistent actor {
     disabled : Bool; // Whether this challenge is disabled (no new verifications allowed)
   };
 
-  // Migration function for Challenge type upgrade
-  // This handles adding the new 'markdownMessage' and 'disabled' fields
-  private func migrateChallenges(oldChallenges : [ChallengeV1]) : [Challenge] {
-    Array.map<ChallengeV1, Challenge>(oldChallenges, func(challenge : ChallengeV1) : Challenge {
-      {
-        id = challenge.id;
-        description = challenge.description;
-        challengeType = challenge.challengeType;
-        points = challenge.points;
-        markdownMessage = null; // Default value for new field
-        disabled = false; // Default value for new field
-      }
-    });
-  };
-
   // Storage for cached user data
   private var userDataStore : Trie.Trie<Principal, CachedUser> = Trie.empty();
 
   // Storage for challenges
-  private stable var challengesStable : [ChallengeV1] = [];
   private var challenges : [Challenge] = [];
 
   // Challenge ID counter
@@ -2214,21 +2192,6 @@ persistent actor {
     };
   };
 
-  // System functions for upgrade migration
-  system func preupgrade() {
-    challengesStable := Array.map<Challenge, ChallengeV1>(challenges, func(c : Challenge) : ChallengeV1 {
-      {
-        id = c.id;
-        description = c.description;
-        challengeType = c.challengeType;
-        points = c.points;
-      }
-    });
-  };
 
-  system func postupgrade() {
-    challenges := migrateChallenges(challengesStable);
-    challengesStable := [];
-  };
 
 };
