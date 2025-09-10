@@ -851,11 +851,11 @@ persistent actor {
   private func calculateFollowerPoints(followers : Nat) : Nat {
     var points : Nat = 0;
     var score : Nat = followers;
-    while (score > 100) {
+    while (score > 10) {
       points += 10;
       score := score / 10;
     };
-    points += score / 10;
+    points += score;
     return points;
   };
 

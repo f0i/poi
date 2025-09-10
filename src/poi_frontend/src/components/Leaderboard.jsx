@@ -142,123 +142,15 @@ function Leaderboard() {
         </p>
       </div>
 
-      {/* User Stats Card */}
-      {userPoints && (
-        <div className="card">
-          {console.log(
-            "🔍 DEBUG Leaderboard: Rendering user stats with points:",
-            userPoints,
-          )}
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-white flex items-center">
-              <svg
-                className="w-6 h-6 mr-2 text-blue-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-              Your Stats
-            </h3>
-            <button
-              onClick={() => getPoints(true)}
-              className="btn-secondary text-sm px-3 py-1"
-              title="Refresh points from Twitter/X"
-            >
-              <svg
-                className="w-4 h-4 mr-1 inline"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              Refresh
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-slate-700 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-blue-400 mb-1">
-                {userRank ? getRankIcon(userRank) : "—"}
-              </div>
-              <p className="text-slate-400 text-sm">Current Rank</p>
-            </div>
-
-            <div className="bg-slate-700 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-green-400 mb-1">
-                {console.log(
-                  "🔍 DEBUG Leaderboard: Rendering total points:",
-                  userPoints.totalPoints,
-                ) || formatNumber(userPoints.totalPoints)}
-              </div>
-              <p className="text-slate-400 text-sm">Total Points</p>
-            </div>
-
-            <div className="bg-slate-700 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-purple-400 mb-1">
-                {console.log(
-                  "🔍 DEBUG Leaderboard: Rendering challenge points:",
-                  userPoints.challengePoints,
-                ) || formatNumber(userPoints.challengePoints)}
-              </div>
-              <p className="text-slate-400 text-sm">Challenge Points</p>
-            </div>
-
-            <div className="bg-slate-700 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-orange-400 mb-1">
-                {console.log(
-                  "🔍 DEBUG Leaderboard: Rendering follower points:",
-                  userPoints.followerPoints,
-                ) || formatNumber(userPoints.followerPoints)}
-              </div>
-              <p className="text-slate-400 text-sm">Follower Points</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Leaderboard */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-white flex items-center">
-            <svg
-              className="w-6 h-6 mr-2 text-yellow-500"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            Leaderboard
-          </h3>
-          <button
-            onClick={loadLeaderboard}
-            disabled={loading}
-            className="btn-secondary text-sm"
-          >
-            {loading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            ) : (
-              <>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        {/* Left Column - Full Leaderboard */}
+        <div className="xl:col-span-2">
+          <div className="card">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white flex items-center">
                 <svg
-                  className="w-4 h-4 mr-2 inline"
+                  className="w-6 h-6 mr-2 text-yellow-500"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -267,167 +159,483 @@ function Leaderboard() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                Refresh
-              </>
-            )}
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <span className="ml-3 text-slate-400">Loading leaderboard...</span>
-          </div>
-        ) : leaderboard.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                className="w-8 h-8 text-slate-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                Full Leaderboard
+              </h3>
+              <button
+                onClick={loadLeaderboard}
+                disabled={loading}
+                className="btn-secondary text-sm"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
+                {loading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <>
+                    <svg
+                      className="w-4 h-4 mr-2 inline"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    Refresh
+                  </>
+                )}
+              </button>
             </div>
-            <h4 className="text-lg font-medium text-white mb-2">
-              No Rankings Yet
-            </h4>
-            <p className="text-slate-400">
-              Complete challenges to start climbing the leaderboard!
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {leaderboard.slice(0, 20).map((user, index) => {
-              const rank = index + 1;
-              const isCurrentUser =
-                user.principal.toString() ===
-                identity?.getPrincipal().toString();
 
-              return (
-                <div
-                  key={user.principal.toString()}
-                  className={`rounded-lg p-4 border transition-all duration-200 ${
-                    isCurrentUser
-                      ? "bg-blue-900/20 border-blue-500/50 ring-1 ring-blue-500/20"
-                      : getRankStyle(rank)
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      {/* Rank */}
-                      <div className="flex items-center space-x-3">
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                            rank <= 3
-                              ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
-                              : "bg-slate-600 text-slate-300"
-                          }`}
-                        >
-                          {rank <= 3 ? getRankIcon(rank) : rank}
-                        </div>
-                        {isCurrentUser && (
-                          <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
-                            YOU
-                          </span>
-                        )}
-                      </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <span className="ml-3 text-slate-400">Loading leaderboard...</span>
+              </div>
+            ) : leaderboard.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    className="w-8 h-8 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-medium text-white mb-2">
+                  No Rankings Yet
+                </h4>
+                <p className="text-slate-400">
+                  Complete challenges to start climbing the leaderboard!
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[800px] overflow-y-auto">
+                {leaderboard.map((user, index) => {
+                  const rank = index + 1;
+                  const isCurrentUser =
+                    user.principal.toString() ===
+                    identity?.getPrincipal().toString();
 
-                      {/* User Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3">
-                          {user.avatar_url ? (
-                            <img
-                              src={user.avatar_url}
-                              alt={`${user.name ? user.name : "User"} avatar`}
-                              className="w-10 h-10 rounded-full object-cover border-2 border-slate-600"
-                              onError={(e) => {
-                                // Fallback to default icon if image fails to load
-                                e.target.style.display = "none";
-                                e.target.nextSibling.style.display = "flex";
-                              }}
-                            />
-                          ) : null}
-                          <div
-                            className={`w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center ${user.avatar_url ? "hidden" : ""}`}
-                          >
-                            <svg
-                              className="w-6 h-6 text-slate-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
+                  return (
+                    <div
+                      key={user.principal.toString()}
+                      className={`rounded-lg p-4 border transition-all duration-200 hover:scale-[1.02] ${
+                        isCurrentUser
+                          ? "bg-blue-900/20 border-blue-500/50 ring-1 ring-blue-500/20"
+                          : getRankStyle(rank)
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          {/* Rank */}
+                          <div className="flex items-center space-x-3">
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                rank <= 3
+                                  ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
+                                  : "bg-slate-600 text-slate-300"
+                              }`}
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                              />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-white font-medium">
-                              {user.name ? user.name : "Anonymous User"}
-                            </p>
-                            {user.username && (
-                              <p className="text-slate-400 text-sm">
-                                @{user.username}
-                              </p>
+                              {rank <= 3 ? getRankIcon(rank) : rank}
+                            </div>
+                            {isCurrentUser && (
+                              <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
+                                YOU
+                              </span>
                             )}
                           </div>
+
+                          {/* User Info */}
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3">
+                              {user.avatar_url ? (
+                                <img
+                                  src={user.avatar_url}
+                                  alt={`${user.name ? user.name : "User"} avatar`}
+                                  className="w-10 h-10 rounded-full object-cover border-2 border-slate-600"
+                                  onError={(e) => {
+                                    // Fallback to default icon if image fails to load
+                                    e.target.style.display = "none";
+                                    e.target.nextSibling.style.display = "flex";
+                                  }}
+                                />
+                              ) : null}
+                              <div
+                                className={`w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center ${user.avatar_url ? "hidden" : ""}`}
+                              >
+                                <svg
+                                  className="w-6 h-6 text-slate-400"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                  />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="text-white font-medium">
+                                  {user.name ? user.name : "Anonymous User"}
+                                </p>
+                                {user.username && (
+                                  <p className="text-slate-400 text-sm">
+                                    @{user.username}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Points */}
+                        <div className="flex items-center space-x-6 text-right">
+                          <div>
+                            <p className="text-white font-bold text-lg">
+                              {formatNumber(user.totalPoints)}
+                            </p>
+                            <p className="text-slate-400 text-sm">Total Points</p>
+                          </div>
+
+                          <div className="hidden md:block">
+                            <div className="flex space-x-4 text-sm">
+                              <div>
+                                <p className="text-purple-400 font-medium">
+                                  {formatNumber(user.challengePoints)}
+                                </p>
+                                <p className="text-slate-500">Challenge</p>
+                              </div>
+                              <div>
+                                <p className="text-orange-400 font-medium">
+                                  {formatNumber(user.followerPoints)}
+                                </p>
+                                <p className="text-slate-500">Followers</p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-
-                    {/* Points */}
-                    <div className="flex items-center space-x-6 text-right">
-                      <div>
-                        <p className="text-white font-bold text-lg">
-                          {formatNumber(user.totalPoints)}
-                        </p>
-                        <p className="text-slate-400 text-sm">Total Points</p>
-                      </div>
-
-                      <div className="hidden md:block">
-                        <div className="flex space-x-4 text-sm">
-                          <div>
-                            <p className="text-purple-400 font-medium">
-                              {formatNumber(user.challengePoints)}
-                            </p>
-                            <p className="text-slate-500">Challenge</p>
-                          </div>
-                          <div>
-                            <p className="text-orange-400 font-medium">
-                              {formatNumber(user.followerPoints)}
-                            </p>
-                            <p className="text-slate-500">Followers</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {leaderboard.length > 20 && (
-              <div className="text-center py-4">
-                <p className="text-slate-400">
-                  And {leaderboard.length - 20} more participants...
-                </p>
+                  );
+                })}
               </div>
             )}
           </div>
-        )}
+        </div>
+
+        {/* Right Column - Top 3 + User Profile */}
+        <div className="space-y-6">
+          {/* Top 3 Podium */}
+          {leaderboard.length >= 3 && (
+            <div className="card">
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                <svg
+                  className="w-6 h-6 mr-2 text-yellow-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                  />
+                </svg>
+                Top 3 Champions
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                {/* 2nd Place */}
+                <div className="text-center order-1">
+                  <div className="relative">
+                    {leaderboard[1]?.avatar_url ? (
+                      <img
+                        src={leaderboard[1].avatar_url}
+                        alt={`${leaderboard[1].name || "User"} avatar`}
+                        className="w-16 h-16 rounded-full object-cover border-4 border-gray-400 mx-auto mb-2"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          e.target.nextSibling.style.display = "flex";
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`w-16 h-16 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-2 border-4 border-gray-400 ${leaderboard[1]?.avatar_url ? "hidden" : ""}`}
+                    >
+                      <svg
+                        className="w-8 h-8 text-slate-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center mx-auto -mt-2 mb-2">
+                      <span className="text-white font-bold text-sm">🥈</span>
+                    </div>
+                  </div>
+                  <p className="text-white font-medium text-sm truncate">
+                    {leaderboard[1]?.name || "Anonymous"}
+                  </p>
+                  <p className="text-slate-400 text-xs">
+                    {formatNumber(leaderboard[1]?.totalPoints || 0)}
+                  </p>
+                </div>
+
+                {/* 1st Place */}
+                <div className="text-center order-2">
+                  <div className="relative">
+                    {leaderboard[0]?.avatar_url ? (
+                      <img
+                        src={leaderboard[0].avatar_url}
+                        alt={`${leaderboard[0].name || "User"} avatar`}
+                        className="w-20 h-20 rounded-full object-cover border-4 border-yellow-500 mx-auto mb-2"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          e.target.nextSibling.style.display = "flex";
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`w-20 h-20 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-2 border-4 border-yellow-500 ${leaderboard[0]?.avatar_url ? "hidden" : ""}`}
+                    >
+                      <svg
+                        className="w-10 h-10 text-slate-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mx-auto -mt-3 mb-2">
+                      <span className="text-white font-bold">🥇</span>
+                    </div>
+                  </div>
+                  <p className="text-white font-bold text-base truncate">
+                    {leaderboard[0]?.name || "Anonymous"}
+                  </p>
+                  <p className="text-yellow-400 text-sm font-bold">
+                    {formatNumber(leaderboard[0]?.totalPoints || 0)}
+                  </p>
+                </div>
+
+                {/* 3rd Place */}
+                <div className="text-center order-3">
+                  <div className="relative">
+                    {leaderboard[2]?.avatar_url ? (
+                      <img
+                        src={leaderboard[2].avatar_url}
+                        alt={`${leaderboard[2].name || "User"} avatar`}
+                        className="w-16 h-16 rounded-full object-cover border-4 border-orange-500 mx-auto mb-2"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          e.target.nextSibling.style.display = "flex";
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`w-16 h-16 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-2 border-4 border-orange-500 ${leaderboard[2]?.avatar_url ? "hidden" : ""}`}
+                    >
+                      <svg
+                        className="w-8 h-8 text-slate-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center mx-auto -mt-2 mb-2">
+                      <span className="text-white font-bold text-sm">🥉</span>
+                    </div>
+                  </div>
+                  <p className="text-white font-medium text-sm truncate">
+                    {leaderboard[2]?.name || "Anonymous"}
+                  </p>
+                  <p className="text-slate-400 text-xs">
+                    {formatNumber(leaderboard[2]?.totalPoints || 0)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Current User Section */}
+          {userPoints && (
+            <div className="card">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white flex items-center">
+                  <svg
+                    className="w-6 h-6 mr-2 text-blue-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                  Your Performance
+                </h3>
+                <button
+                  onClick={() => getPoints(true)}
+                  className="btn-secondary text-sm px-3 py-1"
+                  title="Refresh points from Twitter/X"
+                >
+                  <svg
+                    className="w-4 h-4 mr-1 inline"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  Refresh
+                </button>
+              </div>
+
+              {/* Rank Display */}
+              <div className="text-center mb-6">
+                <div className="text-4xl font-bold text-blue-400 mb-2">
+                  {userRank ? getRankIcon(userRank) : "—"}
+                </div>
+                <p className="text-slate-400 text-sm">
+                  {userRank ? `Rank #${userRank}` : "Not ranked yet"}
+                </p>
+              </div>
+
+              {/* Points Breakdown */}
+              <div className="space-y-4 mb-6">
+                <div className="bg-slate-700 rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400 text-sm">Total Points</span>
+                    <span className="text-green-400 font-bold text-lg">
+                      {formatNumber(userPoints.totalPoints)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-700 rounded-lg p-4">
+                    <div className="text-center">
+                      <div className="text-purple-400 font-bold text-lg mb-1">
+                        {formatNumber(userPoints.challengePoints)}
+                      </div>
+                      <p className="text-slate-400 text-sm">Challenge Points</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-700 rounded-lg p-4">
+                    <div className="text-center">
+                      <div className="text-orange-400 font-bold text-lg mb-1">
+                        {formatNumber(userPoints.followerPoints)}
+                      </div>
+                      <p className="text-slate-400 text-sm">Follower Points</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="space-y-3">
+                <button
+                  onClick={() => (window.location.hash = "#challenges")}
+                  className="w-full flex items-center gap-3 p-4 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-left"
+                >
+                  <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+                    <svg
+                      className="w-5 h-5 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">View Challenges</p>
+                    <p className="text-slate-400 text-sm">
+                      Complete challenges to earn points
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => (window.location.hash = "#profile")}
+                  className="w-full flex items-center gap-3 p-4 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-left"
+                >
+                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg
+                      className="w-5 h-5 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">View Profile</p>
+                    <p className="text-slate-400 text-sm">
+                      Manage your account settings
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
