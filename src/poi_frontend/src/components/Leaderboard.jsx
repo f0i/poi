@@ -220,118 +220,126 @@ function Leaderboard() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-3 max-h-[800px] overflow-y-auto">
-                {leaderboard.map((user, index) => {
-                  const rank = index + 1;
-                  const isCurrentUser =
-                    user.principal.toString() ===
-                    identity?.getPrincipal().toString();
+              <div className="relative">
+                <div className="space-y-3 max-h-[800px] overflow-y-auto scrollbar-hide">
+                  {leaderboard.map((user, index) => {
+                    const rank = index + 1;
+                    const isCurrentUser =
+                      user.principal.toString() ===
+                      identity?.getPrincipal().toString();
 
-                  return (
-                    <div
-                      key={user.principal.toString()}
-                      className={`rounded-lg p-4 border transition-all duration-200 hover:scale-[1.02] ${
-                        isCurrentUser
-                          ? "bg-blue-900/20 border-blue-500/50 ring-1 ring-blue-500/20"
-                          : getRankStyle(rank)
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          {/* Rank */}
-                          <div className="flex items-center space-x-3">
-                            <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                                rank <= 3
-                                  ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
-                                  : "bg-slate-600 text-slate-300"
-                              }`}
-                            >
-                              {rank <= 3 ? getRankIcon(rank) : rank}
-                            </div>
-                            {isCurrentUser && (
-                              <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
-                                YOU
-                              </span>
-                            )}
-                          </div>
-
-                          {/* User Info */}
-                          <div className="flex-1">
+                    return (
+                      <div
+                        key={user.principal.toString()}
+                        className={`rounded-lg p-4 border transition-all duration-200 hover:scale-[1.02] relative ${
+                          isCurrentUser
+                            ? "bg-blue-900/20 border-blue-500/50 ring-1 ring-blue-500/20"
+                            : getRankStyle(rank)
+                        } ${index >= 3 ? 'blur-sm opacity-60' : 'shadow-lg ring-1 ring-white/10'}`}
+                        style={{
+                          filter: index >= 3 ? `blur(${Math.min((index - 2) * 0.5, 2)}px)` : 'none'
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            {/* Rank */}
                             <div className="flex items-center space-x-3">
-                              {user.avatar_url ? (
-                                <img
-                                  src={user.avatar_url}
-                                  alt={`${user.name ? user.name : "User"} avatar`}
-                                  className="w-10 h-10 rounded-full object-cover border-2 border-slate-600"
-                                  onError={(e) => {
-                                    // Fallback to default icon if image fails to load
-                                    e.target.style.display = "none";
-                                    e.target.nextSibling.style.display = "flex";
-                                  }}
-                                />
-                              ) : null}
                               <div
-                                className={`w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center ${user.avatar_url ? "hidden" : ""}`}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                  rank <= 3
+                                    ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
+                                    : "bg-slate-600 text-slate-300"
+                                }`}
                               >
-                                <svg
-                                  className="w-6 h-6 text-slate-400"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                  />
-                                </svg>
+                                {rank <= 3 ? getRankIcon(rank) : rank}
                               </div>
-                              <div>
-                                <p className="text-white font-medium">
-                                  {user.name ? user.name : "Anonymous User"}
-                                </p>
-                                {user.username && (
-                                  <p className="text-slate-400 text-sm">
-                                    @{user.username}
+                              {isCurrentUser && (
+                                <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
+                                  YOU
+                                </span>
+                              )}
+                            </div>
+
+                            {/* User Info */}
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3">
+                                {user.avatar_url ? (
+                                  <img
+                                    src={user.avatar_url}
+                                    alt={`${user.name ? user.name : "User"} avatar`}
+                                    className="w-10 h-10 rounded-full object-cover border-2 border-slate-600"
+                                    onError={(e) => {
+                                      // Fallback to default icon if image fails to load
+                                      e.target.style.display = "none";
+                                      e.target.nextSibling.style.display = "flex";
+                                    }}
+                                  />
+                                ) : null}
+                                <div
+                                  className={`w-10 h-10 bg-slate-600 rounded-full flex items-center justify-center ${user.avatar_url ? "hidden" : ""}`}
+                                >
+                                  <svg
+                                    className="w-6 h-6 text-slate-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                    />
+                                  </svg>
+                                </div>
+                                <div>
+                                  <p className="text-white font-medium">
+                                    {user.name ? user.name : "Anonymous User"}
                                   </p>
-                                )}
+                                  {user.username && (
+                                    <p className="text-slate-400 text-sm">
+                                      @{user.username}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Points */}
-                        <div className="flex items-center space-x-6 text-right">
-                          <div>
-                            <p className="text-white font-bold text-lg">
-                              {formatNumber(user.totalPoints)}
-                            </p>
-                            <p className="text-slate-400 text-sm">Total Points</p>
-                          </div>
+                          {/* Points */}
+                          <div className="flex items-center space-x-6 text-right">
+                            <div>
+                              <p className="text-white font-bold text-lg">
+                                {formatNumber(user.totalPoints)}
+                              </p>
+                              <p className="text-slate-400 text-sm">Total Points</p>
+                            </div>
 
-                          <div className="hidden md:block">
-                            <div className="flex space-x-4 text-sm">
-                              <div>
-                                <p className="text-purple-400 font-medium">
-                                  {formatNumber(user.challengePoints)}
-                                </p>
-                                <p className="text-slate-500">Challenge</p>
-                              </div>
-                              <div>
-                                <p className="text-orange-400 font-medium">
-                                  {formatNumber(user.followerPoints)}
-                                </p>
-                                <p className="text-slate-500">Followers</p>
+                            <div className="hidden md:block">
+                              <div className="flex space-x-4 text-sm">
+                                <div>
+                                  <p className="text-purple-400 font-medium">
+                                    {formatNumber(user.challengePoints)}
+                                  </p>
+                                  <p className="text-slate-500">Challenge</p>
+                                </div>
+                                <div>
+                                  <p className="text-orange-400 font-medium">
+                                    {formatNumber(user.followerPoints)}
+                                  </p>
+                                  <p className="text-slate-500">Followers</p>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+
+                {/* Gradient overlay for smooth blur transition */}
+                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent pointer-events-none"></div>
               </div>
             )}
           </div>

@@ -37,6 +37,14 @@
   .label {
     @apply block text-sm font-medium text-slate-300 mb-2;
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
+  }
 }
 
 .browser-warning {
