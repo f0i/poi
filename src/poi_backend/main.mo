@@ -1170,6 +1170,7 @@ persistent actor {
     totalPoints : Nat;
     username : ?Text;
     name : ?Text;
+    avatar_url : ?Text;
   }] {
     Debug.print("🔍 BACKEND: ===== getLeaderboard() START =====");
     Debug.print("🔍 BACKEND: Calculating leaderboard for all users...");
@@ -1182,6 +1183,7 @@ persistent actor {
       totalPoints : Nat;
       username : ?Text;
       name : ?Text;
+      avatar_url : ?Text;
     }] = [];
 
     let totalUsers = Trie.size(userPoints);
@@ -1210,37 +1212,41 @@ persistent actor {
         ?updatedPoints,
       ).0;
 
-      // Get user data for display
-      let userInfo = switch (Trie.find(userDataStore, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
-        case (?cachedUser) {
-          if (isCacheValid(cachedUser)) {
-            {
-              username = cachedUser.user.username;
-              name = cachedUser.user.name;
-            };
-          } else {
-            {
-              username = null;
-              name = null;
-            };
-          };
-        };
-        case (null) {
-          {
-            username = null;
-            name = null;
-          };
-        };
-      };
+       // Get user data for display
+       let userInfo = switch (Trie.find(userDataStore, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
+         case (?cachedUser) {
+           if (isCacheValid(cachedUser)) {
+             {
+               username = cachedUser.user.username;
+               name = cachedUser.user.name;
+               avatar_url = cachedUser.user.avatar_url;
+             };
+           } else {
+             {
+               username = null;
+               name = null;
+               avatar_url = null;
+             };
+           };
+         };
+         case (null) {
+           {
+             username = null;
+             name = null;
+             avatar_url = null;
+           };
+         };
+       };
 
-      leaderboard := Array.append(leaderboard, [{
-        principal = principal;
-        challengePoints = calculatedPoints.challengePoints;
-        followerPoints = calculatedPoints.followerPoints;
-        totalPoints = calculatedPoints.totalPoints;
-        username = userInfo.username;
-        name = userInfo.name
-      }]);
+       leaderboard := Array.append(leaderboard, [{
+         principal = principal;
+         challengePoints = calculatedPoints.challengePoints;
+         followerPoints = calculatedPoints.followerPoints;
+         totalPoints = calculatedPoints.totalPoints;
+         username = userInfo.username;
+         name = userInfo.name;
+         avatar_url = userInfo.avatar_url;
+       }]);
     };
 
     // Sort by total points descending
@@ -1250,7 +1256,8 @@ persistent actor {
       followerPoints : Nat;
       totalPoints : Nat;
       username : ?Text;
-      name : ?Text
+      name : ?Text;
+      avatar_url : ?Text;
     }>(
       leaderboard,
       func(a, b) = Nat.compare(b.totalPoints, a.totalPoints),

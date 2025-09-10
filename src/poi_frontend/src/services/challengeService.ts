@@ -229,6 +229,7 @@ export class ChallengeService {
       totalPoints: bigint;
       username: string | null;
       name: string | null;
+      avatar_url: string | null;
     }>
   > {
     try {
