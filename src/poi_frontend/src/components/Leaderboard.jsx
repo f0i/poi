@@ -266,38 +266,38 @@ function Leaderboard() {
                             filter: user.isPlaceholder ? 'none' : (index >= 3 && isAuthenticated ? `blur(${Math.min((index - 2) * 0.5, 2)}px)` : 'none')
                           }}
                         >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                             {/* Rank */}
-                             <div className="flex items-center space-x-3">
-                               <div
-                                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                                   user.isPlaceholder
-                                     ? "bg-slate-700 text-slate-500"
-                                     : rank <= 3
-                                       ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
-                                       : "bg-slate-600 text-slate-300"
-                                 }`}
-                               >
-                                 {user.isPlaceholder ? "—" : (rank <= 3 ? getRankIcon(rank) : rank)}
-                               </div>
-                               {isCurrentUser && !user.isPlaceholder && (
-                                 <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
-                                   YOU
-                                 </span>
-                               )}
-                             </div>
+                         <div className="flex items-center justify-between">
+                           <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
+                              {/* Rank */}
+                              <div className="flex items-center space-x-1 sm:space-x-3 flex-shrink-0">
+                                <div
+                                  className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold ${
+                                    user.isPlaceholder
+                                      ? "bg-slate-700 text-slate-500"
+                                      : rank <= 3
+                                        ? "bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
+                                        : "bg-slate-600 text-slate-300"
+                                  }`}
+                                >
+                                  {user.isPlaceholder ? "—" : (rank <= 3 ? getRankIcon(rank) : rank)}
+                                </div>
+                                {isCurrentUser && !user.isPlaceholder && (
+                                  <span className="text-xs bg-blue-600 text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full hidden sm:inline">
+                                    YOU
+                                  </span>
+                                )}
+                              </div>
 
                               {/* User Info */}
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2 sm:space-x-3">
                                   {/* Profile Picture */}
-                                  <div className="relative">
+                                  <div className="relative flex-shrink-0">
                                     {user.avatar_url && !user.isPlaceholder ? (
                                       <img
                                         src={user.avatar_url}
                                         alt={`${user.name || "User"} avatar`}
-                                        className="w-10 h-10 rounded-full object-cover border-2 border-slate-600"
+                                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-slate-600"
                                         onError={(e) => {
                                           e.target.style.display = "none";
                                           e.target.nextSibling.style.display = "flex";
@@ -305,10 +305,10 @@ function Leaderboard() {
                                       />
                                     ) : null}
                                     <div
-                                      className={`w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center border-2 border-slate-600 ${user.avatar_url && !user.isPlaceholder ? "hidden" : ""}`}
+                                      className={`w-8 h-8 sm:w-10 sm:h-10 bg-slate-700 rounded-full flex items-center justify-center border-2 border-slate-600 ${user.avatar_url && !user.isPlaceholder ? "hidden" : ""}`}
                                     >
                                       <svg
-                                        className="w-6 h-6 text-slate-500"
+                                        className="w-4 h-4 sm:w-6 sm:h-6 text-slate-500"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -322,51 +322,51 @@ function Leaderboard() {
                                       </svg>
                                     </div>
                                   </div>
-                                  <div>
-                                    <p className="text-slate-400 font-medium">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-slate-400 font-medium text-sm sm:text-base truncate">
                                       {user.isPlaceholder ? "Join the competition!" : (user.name ? user.name : "Anonymous User")}
                                     </p>
                                     {user.username && !user.isPlaceholder && (
-                                      <p className="text-slate-500 text-sm">
+                                      <p className="text-slate-500 text-xs sm:text-sm truncate">
                                         @{user.username}
                                       </p>
                                     )}
                                     {user.isPlaceholder && (
-                                      <p className="text-slate-500 text-sm">
+                                      <p className="text-slate-500 text-xs sm:text-sm truncate">
                                         Be the next champion
                                       </p>
                                     )}
                                   </div>
                                 </div>
                               </div>
-                          </div>
-
-                           {/* Points */}
-                           <div className="flex items-center space-x-6 text-right">
-                             <div>
-                               <p className={`font-bold text-lg ${user.isPlaceholder ? 'text-slate-500' : 'text-white'}`}>
-                                 {user.isPlaceholder ? "—" : formatNumber(user.totalPoints)}
-                               </p>
-                               <p className="text-slate-400 text-sm">Total Points</p>
-                             </div>
-
-                             <div className="hidden md:block">
-                               <div className="flex space-x-4 text-sm">
-                                 <div>
-                                   <p className={`font-medium ${user.isPlaceholder ? 'text-slate-600' : 'text-purple-400'}`}>
-                                     {user.isPlaceholder ? "—" : formatNumber(user.challengePoints)}
-                                   </p>
-                                   <p className="text-slate-500">Challenge</p>
-                                 </div>
-                                 <div>
-                                   <p className={`font-medium ${user.isPlaceholder ? 'text-slate-600' : 'text-orange-400'}`}>
-                                     {user.isPlaceholder ? "—" : formatNumber(user.followerPoints)}
-                                   </p>
-                                   <p className="text-slate-500">Followers</p>
-                                 </div>
-                               </div>
-                             </div>
                            </div>
+
+                            {/* Points */}
+                            <div className="flex items-center space-x-2 sm:space-x-6 text-right flex-shrink-0">
+                              <div>
+                                <p className={`font-bold text-base sm:text-lg ${user.isPlaceholder ? 'text-slate-500' : 'text-white'}`}>
+                                  {user.isPlaceholder ? "—" : formatNumber(user.totalPoints)}
+                                </p>
+                                <p className="text-slate-400 text-xs sm:text-sm">Total Points</p>
+                              </div>
+
+                              <div className="hidden md:block">
+                                <div className="flex space-x-2 sm:space-x-4 text-xs sm:text-sm">
+                                  <div>
+                                    <p className={`font-medium ${user.isPlaceholder ? 'text-slate-600' : 'text-purple-400'}`}>
+                                      {user.isPlaceholder ? "—" : formatNumber(user.challengePoints)}
+                                    </p>
+                                    <p className="text-slate-500">Challenge</p>
+                                  </div>
+                                  <div>
+                                    <p className={`font-medium ${user.isPlaceholder ? 'text-slate-600' : 'text-orange-400'}`}>
+                                      {user.isPlaceholder ? "—" : formatNumber(user.followerPoints)}
+                                    </p>
+                                    <p className="text-slate-500">Followers</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                         </div>
                       </div>
                     );
@@ -401,135 +401,135 @@ function Leaderboard() {
                 </svg>
                 Top 3 Champions
               </h3>
-              <div className="grid grid-cols-3 gap-4">
-                {/* 2nd Place */}
-                <div className="text-center order-1">
-                  <div className="relative">
-                    {leaderboard[1]?.avatar_url ? (
-                      <img
-                        src={leaderboard[1].avatar_url}
-                        alt={`${leaderboard[1].name || "User"} avatar`}
-                        className="w-16 h-16 rounded-full object-cover border-4 border-gray-400 mx-auto mb-2"
-                        onError={(e) => {
-                          e.target.style.display = "none";
-                          e.target.nextSibling.style.display = "flex";
-                        }}
-                      />
-                    ) : null}
-                    <div
-                      className={`w-16 h-16 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-2 border-4 border-gray-400 ${leaderboard[1]?.avatar_url ? "hidden" : ""}`}
-                    >
-                      <svg
-                        className="w-8 h-8 text-slate-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                    </div>
-                    <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center mx-auto -mt-2 mb-2">
-                      <span className="text-white font-bold text-sm">🥈</span>
-                    </div>
-                  </div>
-                  <p className="text-white font-medium text-sm truncate">
-                    {leaderboard[1]?.name || "Anonymous"}
-                  </p>
-                  <p className="text-slate-400 text-xs">
-                    {formatNumber(leaderboard[1]?.totalPoints || 0)}
-                  </p>
-                </div>
+               <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                 {/* 2nd Place */}
+                 <div className="text-center order-1">
+                   <div className="relative">
+                     {leaderboard[1]?.avatar_url ? (
+                       <img
+                         src={leaderboard[1].avatar_url}
+                         alt={`${leaderboard[1].name || "User"} avatar`}
+                         className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-3 sm:border-4 border-gray-400 mx-auto mb-1 sm:mb-2"
+                         onError={(e) => {
+                           e.target.style.display = "none";
+                           e.target.nextSibling.style.display = "flex";
+                         }}
+                       />
+                     ) : null}
+                     <div
+                       className={`w-12 h-12 sm:w-16 sm:h-16 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-1 sm:mb-2 border-3 sm:border-4 border-gray-400 ${leaderboard[1]?.avatar_url ? "hidden" : ""}`}
+                     >
+                       <svg
+                         className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24"
+                       >
+                         <path
+                           strokeLinecap="round"
+                           strokeLinejoin="round"
+                           strokeWidth={2}
+                           d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                         />
+                       </svg>
+                     </div>
+                     <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-400 rounded-full flex items-center justify-center mx-auto -mt-1 sm:-mt-2 mb-1 sm:mb-2">
+                       <span className="text-white font-bold text-xs sm:text-sm">🥈</span>
+                     </div>
+                   </div>
+                   <p className="text-white font-medium text-xs sm:text-sm truncate">
+                     {leaderboard[1]?.name || "Anonymous"}
+                   </p>
+                   <p className="text-slate-400 text-xs">
+                     {formatNumber(leaderboard[1]?.totalPoints || 0)}
+                   </p>
+                 </div>
 
-                {/* 1st Place */}
-                <div className="text-center order-2">
-                  <div className="relative">
-                    {leaderboard[0]?.avatar_url ? (
-                      <img
-                        src={leaderboard[0].avatar_url}
-                        alt={`${leaderboard[0].name || "User"} avatar`}
-                        className="w-20 h-20 rounded-full object-cover border-4 border-yellow-500 mx-auto mb-2"
-                        onError={(e) => {
-                          e.target.style.display = "none";
-                          e.target.nextSibling.style.display = "flex";
-                        }}
-                      />
-                    ) : null}
-                    <div
-                      className={`w-20 h-20 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-2 border-4 border-yellow-500 ${leaderboard[0]?.avatar_url ? "hidden" : ""}`}
-                    >
-                      <svg
-                        className="w-10 h-10 text-slate-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                    </div>
-                    <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mx-auto -mt-3 mb-2">
-                      <span className="text-white font-bold">🥇</span>
-                    </div>
-                  </div>
-                  <p className="text-white font-bold text-base truncate">
-                    {leaderboard[0]?.name || "Anonymous"}
-                  </p>
-                  <p className="text-yellow-400 text-sm font-bold">
-                    {formatNumber(leaderboard[0]?.totalPoints || 0)}
-                  </p>
-                </div>
+                 {/* 1st Place */}
+                 <div className="text-center order-2">
+                   <div className="relative">
+                     {leaderboard[0]?.avatar_url ? (
+                       <img
+                         src={leaderboard[0].avatar_url}
+                         alt={`${leaderboard[0].name || "User"} avatar`}
+                         className="w-14 h-14 sm:w-20 sm:h-20 rounded-full object-cover border-3 sm:border-4 border-yellow-500 mx-auto mb-1 sm:mb-2"
+                         onError={(e) => {
+                           e.target.style.display = "none";
+                           e.target.nextSibling.style.display = "flex";
+                         }}
+                       />
+                     ) : null}
+                     <div
+                       className={`w-14 h-14 sm:w-20 sm:h-20 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-1 sm:mb-2 border-3 sm:border-4 border-yellow-500 ${leaderboard[0]?.avatar_url ? "hidden" : ""}`}
+                     >
+                       <svg
+                         className="w-7 h-7 sm:w-10 sm:h-10 text-slate-400"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24"
+                       >
+                         <path
+                           strokeLinecap="round"
+                           strokeLinejoin="round"
+                           strokeWidth={2}
+                           d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                         />
+                       </svg>
+                     </div>
+                     <div className="w-6 h-6 sm:w-8 sm:h-8 bg-yellow-500 rounded-full flex items-center justify-center mx-auto -mt-2 sm:-mt-3 mb-1 sm:mb-2">
+                       <span className="text-white font-bold text-sm sm:text-base">🥇</span>
+                     </div>
+                   </div>
+                   <p className="text-white font-bold text-sm sm:text-base truncate">
+                     {leaderboard[0]?.name || "Anonymous"}
+                   </p>
+                   <p className="text-yellow-400 text-xs sm:text-sm font-bold">
+                     {formatNumber(leaderboard[0]?.totalPoints || 0)}
+                   </p>
+                 </div>
 
-                {/* 3rd Place */}
-                <div className="text-center order-3">
-                  <div className="relative">
-                    {leaderboard[2]?.avatar_url ? (
-                      <img
-                        src={leaderboard[2].avatar_url}
-                        alt={`${leaderboard[2].name || "User"} avatar`}
-                        className="w-16 h-16 rounded-full object-cover border-4 border-orange-500 mx-auto mb-2"
-                        onError={(e) => {
-                          e.target.style.display = "none";
-                          e.target.nextSibling.style.display = "flex";
-                        }}
-                      />
-                    ) : null}
-                    <div
-                      className={`w-16 h-16 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-2 border-4 border-orange-500 ${leaderboard[2]?.avatar_url ? "hidden" : ""}`}
-                    >
-                      <svg
-                        className="w-8 h-8 text-slate-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                    </div>
-                    <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center mx-auto -mt-2 mb-2">
-                      <span className="text-white font-bold text-sm">🥉</span>
-                    </div>
-                  </div>
-                  <p className="text-white font-medium text-sm truncate">
-                    {leaderboard[2]?.name || "Anonymous"}
-                  </p>
-                  <p className="text-slate-400 text-xs">
-                    {formatNumber(leaderboard[2]?.totalPoints || 0)}
-                  </p>
-                </div>
+                 {/* 3rd Place */}
+                 <div className="text-center order-3">
+                   <div className="relative">
+                     {leaderboard[2]?.avatar_url ? (
+                       <img
+                         src={leaderboard[2].avatar_url}
+                         alt={`${leaderboard[2].name || "User"} avatar`}
+                         className="w-12 h-12 sm:w-16 sm:h-16 rounded-full object-cover border-3 sm:border-4 border-orange-500 mx-auto mb-1 sm:mb-2"
+                         onError={(e) => {
+                           e.target.style.display = "none";
+                           e.target.nextSibling.style.display = "flex";
+                         }}
+                       />
+                     ) : null}
+                     <div
+                       className={`w-12 h-12 sm:w-16 sm:h-16 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-1 sm:mb-2 border-3 sm:border-4 border-orange-500 ${leaderboard[2]?.avatar_url ? "hidden" : ""}`}
+                     >
+                       <svg
+                         className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24"
+                       >
+                         <path
+                           strokeLinecap="round"
+                           strokeLinejoin="round"
+                           strokeWidth={2}
+                           d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                         />
+                       </svg>
+                     </div>
+                     <div className="w-5 h-5 sm:w-6 sm:h-6 bg-orange-500 rounded-full flex items-center justify-center mx-auto -mt-1 sm:-mt-2 mb-1 sm:mb-2">
+                       <span className="text-white font-bold text-xs sm:text-sm">🥉</span>
+                     </div>
+                   </div>
+                   <p className="text-white font-medium text-xs sm:text-sm truncate">
+                     {leaderboard[2]?.name || "Anonymous"}
+                   </p>
+                   <p className="text-slate-400 text-xs">
+                     {formatNumber(leaderboard[2]?.totalPoints || 0)}
+                   </p>
+                 </div>
               </div>
             </div>
           )}
