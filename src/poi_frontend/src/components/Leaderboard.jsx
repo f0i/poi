@@ -3,7 +3,7 @@ import { useAuth } from "../AuthContext";
 import { usePoints } from "../PointsContext";
 import { ChallengeService } from "../services/challengeService";
 
-function Leaderboard() {
+function Leaderboard({ onNavigate }) {
   const { isAuthenticated, identity } = useAuth();
   const { points: userPoints, getPoints } = usePoints();
   const [leaderboard, setLeaderboard] = useState([]);
@@ -617,62 +617,35 @@ function Leaderboard() {
                 </div>
               </div>
 
-              {/* Quick Actions */}
-              <div className="space-y-3">
-                <button
-                  onClick={() => (window.location.hash = "#challenges")}
-                  className="w-full flex items-center gap-3 p-4 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-left"
-                >
-                  <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-white font-medium">View Challenges</p>
-                    <p className="text-slate-400 text-sm">
-                      Complete challenges to earn points
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => (window.location.hash = "#profile")}
-                  className="w-full flex items-center gap-3 p-4 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-left"
-                >
-                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-white font-medium">View Profile</p>
-                    <p className="text-slate-400 text-sm">
-                      Manage your account settings
-                    </p>
-                  </div>
-                </button>
-              </div>
+               {/* Quick Actions */}
+               <div className="space-y-3">
+                 <button
+                   onClick={() => onNavigate && onNavigate("profile")}
+                   className="w-full flex items-center gap-3 p-4 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-left"
+                 >
+                   <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                     <svg
+                       className="w-5 h-5 text-white"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24"
+                     >
+                       <path
+                         strokeLinecap="round"
+                         strokeLinejoin="round"
+                         strokeWidth={2}
+                         d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                       />
+                     </svg>
+                   </div>
+                   <div>
+                     <p className="text-white font-medium">View Challenges</p>
+                     <p className="text-slate-400 text-sm">
+                       Complete challenges to earn points
+                     </p>
+                   </div>
+                 </button>
+               </div>
             </div>
           ) : (
             /* Sign Up to Compete Section for Unauthenticated Users */

@@ -1,9 +1,9 @@
 import Leaderboard from "./Leaderboard";
 
-function Dashboard() {
+function Dashboard({ onNavigate }) {
   return (
     <div className="space-y-6">
-      <Leaderboard />
+      <Leaderboard onNavigate={onNavigate} />
     </div>
   );
 }

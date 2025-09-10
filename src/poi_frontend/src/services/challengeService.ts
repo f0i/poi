@@ -353,5 +353,20 @@ export class ChallengeService {
     }
   }
 
+  async refreshUserPoints(origin: string): Promise<{
+    challengePoints: bigint;
+    followerPoints: bigint;
+    totalPoints: bigint;
+  }> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.refreshUserPoints(origin);
+      return result;
+    } catch (error) {
+      console.error("Failed to refresh user points:", error);
+      throw error;
+    }
+  }
+
 
 }

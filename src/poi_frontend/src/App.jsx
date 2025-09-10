@@ -23,7 +23,7 @@ function AuthApp() {
       {!isAuthenticated && (
         <div className="min-h-screen">
           <div className="max-w-6xl mx-auto p-8">
-            <Leaderboard />
+            <Leaderboard onNavigate={() => {}} />
           </div>
         </div>
       )}
@@ -139,11 +139,11 @@ function AuthApp() {
             </div>
           </header>
 
-          {/* Content Area */}
-          <main className="max-w-6xl mx-auto p-8">
-            {activeView === "dashboard" && <Dashboard />}
-            {activeView === "profile" && <UserProfile />}
-          </main>
+           {/* Content Area */}
+           <main className="max-w-6xl mx-auto p-8">
+             {activeView === "dashboard" && <Dashboard onNavigate={setActiveView} />}
+             {activeView === "profile" && <UserProfile />}
+           </main>
         </div>
       )}
     </div>

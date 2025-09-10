@@ -10,9 +10,9 @@ import Hash "mo:base/Hash";
 import Blob "mo:base/Blob";
 import IC "ic:aaaaa-aa";
 import Json "mo:json";
-import {migration} "ChallengeMigration";
+//import {migration} "ChallengeMigration";
 
-(with migration)
+//(with migration)
 persistent actor {
   // External canister types
   type Provider = { #github; #twitter; #discord; #google; #auth0; #zitadel; #x };
@@ -234,9 +234,18 @@ persistent actor {
           Debug.print("🔍 BACKEND: [FETCH] ===== EXTERNAL USER DATA DETAILS =====");
 
           // Debug log user data fields
-          let usernameText = switch (user.username) { case (?u) u; case (null) "null" };
-          let followersText = switch (user.followers_count) { case (?fc) Nat.toText(fc); case (null) "null" };
-          let followingText = switch (user.following_count) { case (?fc) Nat.toText(fc); case (null) "null" };
+          let usernameText = switch (user.username) {
+            case (?u) u;
+            case (null) "null";
+          };
+          let followersText = switch (user.followers_count) {
+            case (?fc) Nat.toText(fc);
+            case (null) "null";
+          };
+          let followingText = switch (user.following_count) {
+            case (?fc) Nat.toText(fc);
+            case (null) "null";
+          };
           let providerText = switch (user.provider) {
             case (#x) { "x" };
             case (#github) { "github" };
@@ -263,61 +272,61 @@ persistent actor {
           Debug.print("🔍 BACKEND: [FETCH] Public Gists: " # (switch (user.public_gists) { case (?pg) Nat.toText(pg); case (null) "null" }));
           Debug.print("🔍 BACKEND: [FETCH] ===== END EXTERNAL USER DATA =====");
 
-           // Store in cache
-           let cachedUser : CachedUser = {
-             user = user;
-             timestamp = Time.now();
-             ttl = CACHE_TTL;
-           };
-           userDataStore := Trie.replace(
-             userDataStore,
-             { key = principal; hash = Principal.hash(principal) },
-             Principal.equal,
-             ?cachedUser,
-           ).0;
-           Debug.print("🔍 BACKEND: [FETCH] Stored user data in cache for principal: " # Principal.toText(principal));
+          // Store in cache
+          let cachedUser : CachedUser = {
+            user = user;
+            timestamp = Time.now();
+            ttl = CACHE_TTL;
+          };
+          userDataStore := Trie.replace(
+            userDataStore,
+            { key = principal; hash = Principal.hash(principal) },
+            Principal.equal,
+            ?cachedUser,
+          ).0;
+          Debug.print("🔍 BACKEND: [FETCH] Stored user data in cache for principal: " # Principal.toText(principal));
 
-           // Calculate and store initial points for new users
-           let existingPoints = Trie.find(userPoints, { key = principal; hash = Principal.hash(principal) }, Principal.equal);
-           switch (existingPoints) {
-             case (null) {
-               Debug.print("🔍 BACKEND: [FETCH] No existing points found, calculating initial follower points");
-               // Calculate initial follower points
-               let initialFollowerPoints = switch (user.followers_count) {
-                 case (?count) {
-                   Debug.print("🔍 BACKEND: [FETCH] Initial follower count: " # Nat.toText(count));
-                   calculateFollowerPoints(count);
-                 };
-                 case (null) {
-                   Debug.print("🔍 BACKEND: [FETCH] No follower count available for initial calculation");
-                   0;
-                 };
-               };
+          // Calculate and store initial points for new users
+          let existingPoints = Trie.find(userPoints, { key = principal; hash = Principal.hash(principal) }, Principal.equal);
+          switch (existingPoints) {
+            case (null) {
+              Debug.print("🔍 BACKEND: [FETCH] No existing points found, calculating initial follower points");
+              // Calculate initial follower points
+              let initialFollowerPoints = switch (user.followers_count) {
+                case (?count) {
+                  Debug.print("🔍 BACKEND: [FETCH] Initial follower count: " # Nat.toText(count));
+                  calculateFollowerPoints(count);
+                };
+                case (null) {
+                  Debug.print("🔍 BACKEND: [FETCH] No follower count available for initial calculation");
+                  0;
+                };
+              };
 
-               // Store initial points
-               let initialPoints = {
-                 challengePoints = 0;
-                 followerPoints = initialFollowerPoints;
-                 totalPoints = initialFollowerPoints;
-                 lastUpdated = Time.now();
-               };
+              // Store initial points
+              let initialPoints = {
+                challengePoints = 0;
+                followerPoints = initialFollowerPoints;
+                totalPoints = initialFollowerPoints;
+                lastUpdated = Time.now();
+              };
 
-               userPoints := Trie.replace(
-                 userPoints,
-                 { key = principal; hash = Principal.hash(principal) },
-                 Principal.equal,
-                 ?initialPoints,
-               ).0;
+              userPoints := Trie.replace(
+                userPoints,
+                { key = principal; hash = Principal.hash(principal) },
+                Principal.equal,
+                ?initialPoints,
+              ).0;
 
-               Debug.print("🔍 BACKEND: [FETCH] Stored initial points for new user: " # Nat.toText(initialFollowerPoints) # " follower points");
-             };
-             case (?_) {
-               Debug.print("🔍 BACKEND: [FETCH] User already has points stored, skipping initial calculation");
-             };
-           };
+              Debug.print("🔍 BACKEND: [FETCH] Stored initial points for new user: " # Nat.toText(initialFollowerPoints) # " follower points");
+            };
+            case (?_) {
+              Debug.print("🔍 BACKEND: [FETCH] User already has points stored, skipping initial calculation");
+            };
+          };
 
-           Debug.print("🔍 BACKEND: [FETCH] ===== fetchUserData() END (SUCCESS) =====");
-           return ?user;
+          Debug.print("🔍 BACKEND: [FETCH] ===== fetchUserData() END (SUCCESS) =====");
+          return ?user;
         };
         case (null) {
           Debug.print("🔍 BACKEND: [FETCH] WARNING: No user data found for principal: " # Principal.toText(principal));
@@ -864,37 +873,31 @@ persistent actor {
         case (?userStatuses) {
           for ((challengeId, status) in Trie.iter(userStatuses)) {
             // Find challenge points
-            let challengePoints = switch (Array.indexOf<Challenge>(
-              { id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = null; disabled = false },
-              challenges,
-              func(a, b) = a.id == b.id
-            )) {
+            let challengePoints = switch (
+              Array.indexOf<Challenge>(
+                {
+                  id = challengeId;
+                  description = "";
+                  challengeType = #follows({ user = "" });
+                  points = 0;
+                  markdownMessage = null;
+                  disabled = false;
+                },
+                challenges,
+                func(a, b) = a.id == b.id,
+              )
+            ) {
               case (?idx) { challenges[idx].points };
               case (null) { 0 };
             };
 
-            completedChallenges := Array.append(completedChallenges, [{
-              challengeId = challengeId;
-              status = status;
-              points = challengePoints;
-            }]);
+            completedChallenges := Array.append(completedChallenges, [{ challengeId = challengeId; status = status; points = challengePoints }]);
           };
         };
         case (null) { /* No completed challenges */ };
       };
 
-      usersData := Array.append(usersData, [{
-        principal = principal;
-        username = userInfo.username;
-        name = userInfo.name;
-        provider = userInfo.provider;
-        followersCount = userInfo.followersCount;
-        cacheValid = userInfo.cacheValid;
-        challengePoints = calculatedPoints.challengePoints;
-        followerPoints = calculatedPoints.followerPoints;
-        totalPoints = calculatedPoints.totalPoints;
-        completedChallenges = completedChallenges;
-      }]);
+      usersData := Array.append(usersData, [{ principal = principal; username = userInfo.username; name = userInfo.name; provider = userInfo.provider; followersCount = userInfo.followersCount; cacheValid = userInfo.cacheValid; challengePoints = calculatedPoints.challengePoints; followerPoints = calculatedPoints.followerPoints; totalPoints = calculatedPoints.totalPoints; completedChallenges = completedChallenges }]);
     };
 
     return {
@@ -1029,15 +1032,15 @@ persistent actor {
           let statusText = switch (status) {
             case (#verified) {
               verifiedChallenges += 1;
-              "verified"
+              "verified";
             };
             case (#pending) {
               pendingChallenges += 1;
-              "pending"
+              "pending";
             };
             case (#failed(reason)) {
               failedChallenges += 1;
-              "failed: " # reason
+              "failed: " # reason;
             };
           };
           Debug.print("🔍 BACKEND: [CHALLENGE] Challenge ID " # Nat.toText(challengeId) # " status: " # statusText);
@@ -1046,11 +1049,20 @@ persistent actor {
             Debug.print("🔍 BACKEND: [CHALLENGE] Processing verified challenge " # Nat.toText(challengeId));
 
             // Find challenge and add its points
-            switch (Array.indexOf<Challenge>(
-              { id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = null; disabled = false },
-              challenges,
-              func(a, b) = a.id == b.id
-            )) {
+            switch (
+              Array.indexOf<Challenge>(
+                {
+                  id = challengeId;
+                  description = "";
+                  challengeType = #follows({ user = "" });
+                  points = 0;
+                  markdownMessage = null;
+                  disabled = false;
+                },
+                challenges,
+                func(a, b) = a.id == b.id,
+              )
+            ) {
               case (?idx) {
                 let challenge = challenges[idx];
                 let challengeTypeText = switch (challenge.challengeType) {
@@ -1280,53 +1292,37 @@ persistent actor {
         ?updatedPoints,
       ).0;
 
-       // Get user data for display
-       let userInfo = switch (Trie.find(userDataStore, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
-         case (?cachedUser) {
-           if (isCacheValid(cachedUser)) {
-             {
-               username = cachedUser.user.username;
-               name = cachedUser.user.name;
-               avatar_url = cachedUser.user.avatar_url;
-             };
-           } else {
-             {
-               username = null;
-               name = null;
-               avatar_url = null;
-             };
-           };
-         };
-         case (null) {
-           {
-             username = null;
-             name = null;
-             avatar_url = null;
-           };
-         };
-       };
+      // Get user data for display
+      let userInfo = switch (Trie.find(userDataStore, { key = principal; hash = Principal.hash(principal) }, Principal.equal)) {
+        case (?cachedUser) {
+          if (isCacheValid(cachedUser)) {
+            {
+              username = cachedUser.user.username;
+              name = cachedUser.user.name;
+              avatar_url = cachedUser.user.avatar_url;
+            };
+          } else {
+            {
+              username = null;
+              name = null;
+              avatar_url = null;
+            };
+          };
+        };
+        case (null) {
+          {
+            username = null;
+            name = null;
+            avatar_url = null;
+          };
+        };
+      };
 
-       leaderboard := Array.append(leaderboard, [{
-         principal = principal;
-         challengePoints = calculatedPoints.challengePoints;
-         followerPoints = calculatedPoints.followerPoints;
-         totalPoints = calculatedPoints.totalPoints;
-         username = userInfo.username;
-         name = userInfo.name;
-         avatar_url = userInfo.avatar_url;
-       }]);
+      leaderboard := Array.append(leaderboard, [{ principal = principal; challengePoints = calculatedPoints.challengePoints; followerPoints = calculatedPoints.followerPoints; totalPoints = calculatedPoints.totalPoints; username = userInfo.username; name = userInfo.name; avatar_url = userInfo.avatar_url }]);
     };
 
     // Sort by total points descending
-    leaderboard := Array.sort<{
-      principal : Principal;
-      challengePoints : Nat;
-      followerPoints : Nat;
-      totalPoints : Nat;
-      username : ?Text;
-      name : ?Text;
-      avatar_url : ?Text;
-    }>(
+    leaderboard := Array.sort<{ principal : Principal; challengePoints : Nat; followerPoints : Nat; totalPoints : Nat; username : ?Text; name : ?Text; avatar_url : ?Text }>(
       leaderboard,
       func(a, b) = Nat.compare(b.totalPoints, a.totalPoints),
     );
@@ -2191,7 +2187,5 @@ persistent actor {
       message = "User deleted successfully - removed " # Nat.toText(deletedItems) # " data entries";
     };
   };
-
-
 
 };
