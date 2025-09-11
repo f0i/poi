@@ -764,12 +764,43 @@ persistent actor {
     };
   };
 
-  // Get current admin
-  public query func getAdmin() : async ?Principal {
-    return admin;
-  };
+   // Get current admin
+   public query func getAdmin() : async ?Principal {
+     return admin;
+   };
 
-  // Admin function to recalculate points for all users
+   // Admin function to update admin to a new principal
+   public shared ({ caller }) func updateAdmin(newAdminPrincipal : Principal) : async () {
+     // Check if caller is the current admin
+     if (not isCallerAdmin(caller)) {
+       Debug.trap("Only the current admin can update the admin");
+     };
+
+     // Check if new admin is anonymous
+     if (Principal.isAnonymous(newAdminPrincipal)) {
+       Debug.trap("Cannot set an anonymous principal as admin");
+     };
+
+     // Check if new admin is the same as current admin
+     switch (admin) {
+       case (?currentAdmin) {
+         if (Principal.equal(currentAdmin, newAdminPrincipal)) {
+           Debug.trap("New admin principal is the same as current admin");
+         };
+       };
+       case (null) {
+         Debug.trap("No admin is currently set");
+       };
+     };
+
+     // Update admin
+     let oldAdmin = admin;
+     admin := ?newAdminPrincipal;
+
+     Debug.print("Admin updated from " # (switch (oldAdmin) { case (?old) Principal.toText(old) ; case (null) "null" }) # " to " # Principal.toText(newAdminPrincipal) # " by " # Principal.toText(caller));
+   };
+
+   // Admin function to recalculate points for all users
   public shared ({ caller }) func recalculateAllUserPoints() : async {
     usersProcessed : Nat;
     totalPointsUpdated : Nat;
