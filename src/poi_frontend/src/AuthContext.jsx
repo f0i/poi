@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
     if (!authClient) return;
 
     try {
-      // Configure login with maximum session duration and disabled idle timeout
+      // Configure login with maximum session duration and idle timeout
       const loginOptions = {
         onSuccess: async () => {
           setIsAuthenticated(true);
@@ -77,9 +77,14 @@ export const AuthProvider = ({ children }) => {
           try {
             const challengeService = new ChallengeService(userIdentity);
             await challengeService.refreshUserPoints(window.location.origin);
-            console.log("🔄 AuthContext: Automatically refreshed points for new user");
+            console.log(
+              "🔄 AuthContext: Automatically refreshed points for new user",
+            );
           } catch (error) {
-            console.error("🔄 AuthContext: Failed to auto-refresh points:", error);
+            console.error(
+              "🔄 AuthContext: Failed to auto-refresh points:",
+              error,
+            );
           }
         },
         onError: (error) => {
@@ -87,15 +92,26 @@ export const AuthProvider = ({ children }) => {
         },
       };
 
-       // Set maximum session duration (30 days) and disable idle timeout
-       loginOptions.maxTimeToLive = 2592000000000000n; // 30 days in nanoseconds
-       loginOptions.disableIdle = true;
+      // Set maximum session duration (30 days) and configure idle timeout
+      loginOptions.maxTimeToLive = 2592000000000000n; // 30 days in nanoseconds
+      loginOptions.idleOptions = {
+        idleTimeout: 30 * 60 * 1000, // 30 minutes in milliseconds
+        disableDefaultIdleCallback: true, // Prevent automatic page reload
+        captureScroll: false, // Don't capture scroll events
+        scrollDebounce: 100 // Default scroll debounce
+      };
 
-       if (process.env.DFX_NETWORK === "ic") {
-         loginOptions.identityProvider = "https://login.f0i.de?provider=x";
-       } else {
-         loginOptions.identityProvider = `http://localhost:4943/?canisterId=${process.env.CANISTER_ID_INTERNET_IDENTITY}`;
-       }
+      if (process.env.DFX_NETWORK === "ic") {
+        loginOptions.identityProvider = "https://login.f0i.de?provider=x";
+      } else {
+        loginOptions.identityProvider = `http://localhost:4943/?canisterId=${process.env.CANISTER_ID_INTERNET_IDENTITY}`;
+      }
+
+      // Debug logging for session configuration
+      console.log("🔍 DEBUG AuthContext: Session configuration:");
+      console.log("🔍 DEBUG AuthContext: maxTimeToLive:", loginOptions.maxTimeToLive?.toString() + "n");
+      console.log("🔍 DEBUG AuthContext: idleOptions:", loginOptions.idleOptions);
+      console.log("🔍 DEBUG AuthContext: identityProvider:", loginOptions.identityProvider);
 
       await authClient.login(loginOptions);
     } catch (error) {
