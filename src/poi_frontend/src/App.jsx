@@ -151,7 +151,7 @@ function AuthApp() {
             {activeView === "dashboard" && (
               <Dashboard onNavigate={setActiveView} />
             )}
-            {activeView === "profile" && <UserProfile />}
+             {activeView === "profile" && <UserProfile onBack={() => setActiveView("dashboard")} />}
           </main>
         </div>
       )}

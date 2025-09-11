@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import ChallengeList from "./ChallengeList";
 import Settings from "./Settings";
 
-function UserProfile() {
+function UserProfile({ onBack }) {
   const { isAuthenticated, identity, userData, userDataLoading, logout } =
     useAuth();
 
@@ -49,6 +49,30 @@ function UserProfile() {
 
   return (
     <div className="space-y-6">
+      {/* Back Button */}
+      <div className="flex justify-start mb-4">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-slate-700"
+          title="Back to Dashboard"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          <span className="text-sm font-medium">Back to Dashboard</span>
+        </button>
+      </div>
+
       {/* User Profile Section */}
       {userDataLoading ? (
         <div className="card">
