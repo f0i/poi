@@ -795,15 +795,7 @@ persistent actor {
     };
 
     // Parse the target principal
-    let targetPrincipalObj = switch (Principal.fromText(targetPrincipal)) {
-      case (?principal) { principal };
-      case (null) {
-        return {
-          success = false;
-          message = "Invalid principal format";
-        };
-      };
-    };
+    let targetPrincipalObj = Principal.fromText(targetPrincipal);
 
     var resetCount = 0;
     var messageParts : [Text] = [];
@@ -825,9 +817,9 @@ persistent actor {
     };
 
     // Reset verification lockouts
-    let hadLockout = Trie.find(verificationLockouts, { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) }, Principal.equal);
-    switch (hadLockout) {
-      case (?lockout) {
+    let _lockout = Trie.find(verificationLockouts, { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) }, Principal.equal);
+    switch (_lockout) {
+      case (?_lockout) {
         verificationLockouts := Trie.replace(
           verificationLockouts,
           { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) },
@@ -841,9 +833,9 @@ persistent actor {
     };
 
     // Reset verification attempts for all challenges
-    let hadAttempts = Trie.find(verificationAttempts, { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) }, Principal.equal);
-    switch (hadAttempts) {
-      case (?userAttempts) {
+    let _userAttempts = Trie.find(verificationAttempts, { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) }, Principal.equal);
+    switch (_userAttempts) {
+      case (?_userAttempts) {
         verificationAttempts := Trie.replace(
           verificationAttempts,
           { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) },
@@ -857,9 +849,9 @@ persistent actor {
     };
 
     // Note: We don't reset permanent blocks automatically as they require manual review
-    let hasPermanentBlock = Trie.find(permanentBlocks, { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) }, Principal.equal);
-    switch (hasPermanentBlock) {
-      case (?block) {
+    let _block = Trie.find(permanentBlocks, { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) }, Principal.equal);
+    switch (_block) {
+      case (?_block) {
         messageParts := Array.append(messageParts, ["Note: User has permanent block that was NOT reset (requires manual review)"]);
       };
       case (null) { /* No permanent block */ };
@@ -2115,7 +2107,7 @@ persistent actor {
 
     // Check if user is actually blocked
     switch (Trie.find(permanentBlocks, { key = userPrincipal; hash = Principal.hash(userPrincipal) }, Principal.equal)) {
-      case (?block) {
+      case (?_block) {
         // Remove from permanent blocks
         permanentBlocks := Trie.replace(
           permanentBlocks,
