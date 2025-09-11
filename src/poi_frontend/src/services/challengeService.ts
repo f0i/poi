@@ -376,4 +376,18 @@ export class ChallengeService {
       throw error;
     }
   }
+
+  async resetUserLockouts(userPrincipal: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      const actor = this.getActor();
+      const result = await actor.resetUserLockouts(userPrincipal);
+      return result;
+    } catch (error) {
+      console.error("Failed to reset user lockouts:", error);
+      throw error;
+    }
+  }
 }

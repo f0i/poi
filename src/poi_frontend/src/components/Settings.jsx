@@ -23,6 +23,9 @@ function Settings() {
   const [userPrincipal, setUserPrincipal] = useState("");
   const [deletingUser, setDeletingUser] = useState(false);
   const [deleteResult, setDeleteResult] = useState(null);
+  const [resetPrincipal, setResetPrincipal] = useState("");
+  const [resettingLockouts, setResettingLockouts] = useState(false);
+  const [resetResult, setResetResult] = useState(null);
 
   const challengeService = new ChallengeService(identity);
 
@@ -160,6 +163,39 @@ function Settings() {
       alert("Failed to delete user. Check console for details.");
     } finally {
       setDeletingUser(false);
+    }
+  };
+
+  const handleResetLockouts = async () => {
+    if (!resetPrincipal.trim()) {
+      alert("Please enter a user principal");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Are you sure you want to reset failed attempts and lockouts for user with principal ${resetPrincipal}? This will clear their consecutive failure count and any verification lockouts.`,
+      )
+    ) {
+      return;
+    }
+
+    setResettingLockouts(true);
+    setResetResult(null);
+    try {
+      const result = await challengeService.resetUserLockouts(resetPrincipal.trim());
+      setResetResult(result);
+      if (result.success) {
+        alert(`Lockouts reset successfully: ${result.message}`);
+        setResetPrincipal("");
+      } else {
+        alert(`Failed to reset lockouts: ${result.message}`);
+      }
+    } catch (error) {
+      console.error("Failed to reset lockouts:", error);
+      alert("Failed to reset lockouts. Check console for details.");
+    } finally {
+      setResettingLockouts(false);
     }
   };
 
@@ -623,24 +659,119 @@ function Settings() {
                         </div>
                       )}
 
-                      {/* User Management Section */}
-                      <div className="border-t border-slate-600 pt-4 mt-4">
-                        <h6 className="text-white font-medium mb-3 flex items-center">
-                          <svg
-                            className="w-4 h-4 mr-2 text-red-500"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                            />
-                          </svg>
-                          User Management
-                        </h6>
+                       {/* User Management Section */}
+                       <div className="border-t border-slate-600 pt-4 mt-4">
+                         <h6 className="text-white font-medium mb-3 flex items-center">
+                           <svg
+                             className="w-4 h-4 mr-2 text-red-500"
+                             fill="none"
+                             stroke="currentColor"
+                             viewBox="0 0 24 24"
+                           >
+                             <path
+                               strokeLinecap="round"
+                               strokeLinejoin="round"
+                               strokeWidth={2}
+                               d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                             />
+                           </svg>
+                           User Management
+                         </h6>
+                         <div className="space-y-4">
+                           <div>
+                             <label className="label text-sm">
+                               Reset User Lockouts
+                             </label>
+                             <input
+                               type="text"
+                               value={resetPrincipal}
+                               onChange={(e) => setResetPrincipal(e.target.value)}
+                               className="input-field w-full"
+                               placeholder="Enter full user principal (63 characters, base32)"
+                             />
+                             <p className="text-slate-400 text-xs mt-1">
+                               Reset failed attempt counters and verification lockouts for a specific user
+                             </p>
+                           </div>
+
+                           <div className="flex justify-center">
+                             <button
+                               onClick={handleResetLockouts}
+                               disabled={resettingLockouts || !resetPrincipal.trim()}
+                               className="btn-warning text-sm"
+                             >
+                               {resettingLockouts ? (
+                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                               ) : (
+                                 <>
+                                   <svg
+                                     className="w-4 h-4 mr-2 inline"
+                                     fill="none"
+                                     stroke="currentColor"
+                                     viewBox="0 0 24 24"
+                                   >
+                                     <path
+                                       strokeLinecap="round"
+                                       strokeLinejoin="round"
+                                       strokeWidth={2}
+                                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                     />
+                                   </svg>
+                                   Reset Lockouts
+                                 </>
+                               )}
+                             </button>
+                           </div>
+
+                           {resetResult && (
+                             <div
+                               className={`rounded-lg p-3 ${
+                                 resetResult.success
+                                   ? "bg-green-900/20 border border-green-600"
+                                   : "bg-red-900/20 border border-red-600"
+                               }`}
+                             >
+                               <div className="flex items-center space-x-2">
+                                 <svg
+                                   className={`w-4 h-4 ${
+                                     resetResult.success
+                                       ? "text-green-500"
+                                       : "text-red-500"
+                                   }`}
+                                   fill="none"
+                                   stroke="currentColor"
+                                   viewBox="0 0 24 24"
+                                 >
+                                   {resetResult.success ? (
+                                     <path
+                                       strokeLinecap="round"
+                                       strokeLinejoin="round"
+                                       strokeWidth={2}
+                                       d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                     />
+                                   ) : (
+                                     <path
+                                       strokeLinecap="round"
+                                       strokeLinejoin="round"
+                                       strokeWidth={2}
+                                       d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                     />
+                                   )}
+                                 </svg>
+                                 <div
+                                   className={`text-sm ${
+                                     resetResult.success
+                                       ? "text-green-400"
+                                       : "text-red-400"
+                                   }`}
+                                 >
+                                   <strong>Reset Lockouts:</strong>{" "}
+                                   {resetResult.message}
+                                 </div>
+                               </div>
+                             </div>
+                           )}
+                         </div>
                         <div className="space-y-4">
                           <div>
                             <label className="label text-sm">

@@ -784,6 +784,110 @@ persistent actor {
     };
   };
 
+  // Admin function to reset failed attempts and lockouts for a specific user
+  public shared ({ caller }) func resetUserLockouts(targetPrincipal : Text) : async {
+    success : Bool;
+    message : Text;
+  } {
+    // Check if caller is admin
+    if (not isCallerAdmin(caller)) {
+      Debug.trap("Only admin can reset user lockouts");
+    };
+
+    // Parse the target principal
+    let targetPrincipalObj = switch (Principal.fromText(targetPrincipal)) {
+      case (?principal) { principal };
+      case (null) {
+        return {
+          success = false;
+          message = "Invalid principal format";
+        };
+      };
+    };
+
+    var resetCount = 0;
+    var messageParts : [Text] = [];
+
+    // Reset consecutive failures
+    let hadConsecutiveFailures = Trie.find(consecutiveFailures, { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) }, Principal.equal);
+    switch (hadConsecutiveFailures) {
+      case (?failures) {
+        consecutiveFailures := Trie.replace(
+          consecutiveFailures,
+          { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) },
+          Principal.equal,
+          null,
+        ).0;
+        resetCount += 1;
+        messageParts := Array.append(messageParts, ["Reset " # Nat.toText(failures.count) # " consecutive failures"]);
+      };
+      case (null) { /* No consecutive failures to reset */ };
+    };
+
+    // Reset verification lockouts
+    let hadLockout = Trie.find(verificationLockouts, { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) }, Principal.equal);
+    switch (hadLockout) {
+      case (?lockout) {
+        verificationLockouts := Trie.replace(
+          verificationLockouts,
+          { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) },
+          Principal.equal,
+          null,
+        ).0;
+        resetCount += 1;
+        messageParts := Array.append(messageParts, ["Cleared verification lockout"]);
+      };
+      case (null) { /* No lockout to reset */ };
+    };
+
+    // Reset verification attempts for all challenges
+    let hadAttempts = Trie.find(verificationAttempts, { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) }, Principal.equal);
+    switch (hadAttempts) {
+      case (?userAttempts) {
+        verificationAttempts := Trie.replace(
+          verificationAttempts,
+          { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) },
+          Principal.equal,
+          null,
+        ).0;
+        resetCount += 1;
+        messageParts := Array.append(messageParts, ["Cleared verification attempt history"]);
+      };
+      case (null) { /* No attempts to reset */ };
+    };
+
+    // Note: We don't reset permanent blocks automatically as they require manual review
+    let hasPermanentBlock = Trie.find(permanentBlocks, { key = targetPrincipalObj; hash = Principal.hash(targetPrincipalObj) }, Principal.equal);
+    switch (hasPermanentBlock) {
+      case (?block) {
+        messageParts := Array.append(messageParts, ["Note: User has permanent block that was NOT reset (requires manual review)"]);
+      };
+      case (null) { /* No permanent block */ };
+    };
+
+    if (resetCount == 0) {
+      return {
+        success = true;
+        message = "No lockouts or failed attempts found for this user";
+      };
+    } else {
+      let message = Array.foldLeft<Text, Text>(
+        messageParts,
+        "",
+        func(acc, part) {
+          if (Text.size(acc) == 0) { part } else { acc # ". " # part };
+        }
+      );
+
+      Debug.print("Admin " # Principal.toText(caller) # " reset lockouts for user " # targetPrincipal # ": " # message);
+
+      return {
+        success = true;
+        message = message;
+      };
+    };
+  };
+
   // Admin function to get comprehensive system data for debugging
   public query ({ caller }) func getSystemData() : async {
     challenges : [{
