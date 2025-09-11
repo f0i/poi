@@ -50,12 +50,13 @@ persistent actor {
     #follows : { user : Text };
   };
 
+  // Challenge type (internal - optional for compatibility)
   type Challenge = {
     id : Nat;
     description : Text;
     challengeType : ChallengeType;
     points : Nat;
-    markdownMessage : ?Text; // Optional additional information in markdown format
+    markdownMessage : ?Text; // Optional internally for stable compatibility
     disabled : Bool; // Whether this challenge is disabled (no new verifications allowed)
   };
 
@@ -63,16 +64,16 @@ persistent actor {
   private var userDataStore : Trie.Trie<Principal, CachedUser> = Trie.empty();
 
   // Storage for challenges
-  private var challenges : [Challenge] = [];
+  var challenges : [Challenge] = [];
 
   // Challenge ID counter
-  private var nextChallengeId : Nat = 0;
+  var nextChallengeId : Nat = 0;
 
   // External canister ID
-  private let USER_DATA_CANISTER_ID = "fhzgg-waaaa-aaaah-aqzvq-cai";
+  let USER_DATA_CANISTER_ID = "fhzgg-waaaa-aaaah-aqzvq-cai";
 
   // Cache TTL in seconds (24 hours)
-  private let CACHE_TTL : Nat = 86400;
+  let CACHE_TTL : Nat = 86400;
 
   // Rate limiting constants
   private let BASE_VERIFICATION_COOLDOWN : Nat = 300_000_000_000; // 5 minutes base cooldown in nanoseconds
@@ -99,19 +100,19 @@ persistent actor {
   private var ongoingVerifications : Trie.Trie<Principal, Nat> = Trie.empty();
 
   // Failed verification lockouts: Principal -> { lockedUntil: Time.Time, reason: Text, failureCount: Nat }
-  private var verificationLockouts : Trie.Trie<Principal, { lockedUntil : Time.Time; reason : Text; failureCount : Nat }> = Trie.empty();
+  var verificationLockouts : Trie.Trie<Principal, { lockedUntil : Time.Time; reason : Text; failureCount : Nat }> = Trie.empty();
 
   // Permanent blocks: Principal -> { blockedAt: Time.Time, reason: Text, totalFailures: Nat }
-  private var permanentBlocks : Trie.Trie<Principal, { blockedAt : Time.Time; reason : Text; totalFailures : Nat }> = Trie.empty();
+  var permanentBlocks : Trie.Trie<Principal, { blockedAt : Time.Time; reason : Text; totalFailures : Nat }> = Trie.empty();
 
   // Followers storage: TargetUserId -> Array of FollowerIds
-  private var followersCache : [(Text, [Text])] = [];
+  var followersCache : [(Text, [Text])] = [];
 
   // Admin principal (set only once)
-  private var admin : ?Principal = null;
+  var admin : ?Principal = null;
 
   // User points tracking: Principal -> { challengePoints, followerPoints, totalPoints, lastUpdated }
-  private var userPoints : Trie.Trie<Principal, { challengePoints : Nat; followerPoints : Nat; totalPoints : Nat; lastUpdated : Time.Time }> = Trie.empty();
+  var userPoints : Trie.Trie<Principal, { challengePoints : Nat; followerPoints : Nat; totalPoints : Nat; lastUpdated : Time.Time }> = Trie.empty();
 
   // Challenge status type for external use
   public type ChallengeStatus = {
@@ -201,7 +202,7 @@ persistent actor {
   };
 
   // Get user data actor reference
-  private func getUserDataActor() : async* actor {
+  func getUserDataActor() : async* actor {
     getUser : (Principal, Text) -> async ?User;
   } {
     let canisterId = Principal.fromText(USER_DATA_CANISTER_ID);
@@ -211,14 +212,14 @@ persistent actor {
   };
 
   // Check if cached user data is still valid
-  private func isCacheValid(cached : CachedUser) : Bool {
+  func isCacheValid(cached : CachedUser) : Bool {
     let now = Time.now();
     let age = now - cached.timestamp;
     age < (cached.ttl * 1_000_000_000); // Convert seconds to nanoseconds
   };
 
   // Fetch user data from external canister
-  private func fetchUserData(principal : Principal, origin : Text) : async ?User {
+  func fetchUserData(principal : Principal, origin : Text) : async ?User {
     Debug.print("🔍 BACKEND: [FETCH] ===== fetchUserData() START =====");
     Debug.print("🔍 BACKEND: [FETCH] Fetching user data from external canister for principal: " # Principal.toText(principal) # " with origin: " # origin);
 
@@ -513,7 +514,7 @@ persistent actor {
   // Challenge CRUD operations
 
   // Create a new challenge
-  public shared ({ caller }) func createChallenge(description : Text, challengeType : ChallengeType, points : Nat, markdownMessage : ?Text) : async Nat {
+  public shared ({ caller }) func createChallenge(description : Text, challengeType : ChallengeType, points : Nat, markdownMessage : Text) : async Nat {
     // Check if caller is admin
     if (not isCallerAdmin(caller)) {
       Debug.trap("Only admin can create challenges");
@@ -527,7 +528,7 @@ persistent actor {
       description = description;
       challengeType = challengeType;
       points = points;
-      markdownMessage = markdownMessage;
+      markdownMessage = ?markdownMessage;
       disabled = false;
     };
     challenges := Array.append(challenges, [newChallenge]);
@@ -548,13 +549,13 @@ persistent actor {
   };
 
   // Update a challenge
-  public shared ({ caller }) func updateChallenge(id : Nat, description : Text, challengeType : ChallengeType, points : Nat, markdownMessage : ?Text) : async Bool {
+  public shared ({ caller }) func updateChallenge(id : Nat, description : Text, challengeType : ChallengeType, points : Nat, markdownMessage : Text) : async Bool {
     // Check if caller is admin
     if (not isCallerAdmin(caller)) {
       Debug.trap("Only admin can update challenges");
     };
 
-    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = null; disabled = false }, challenges, func(a, b) = a.id == b.id) else {
+    let ?index = Array.indexOf<Challenge>({ id = id; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = ?""; disabled = false }, challenges, func(a, b) = a.id == b.id) else {
       Debug.print("Challenge not found for update: " # Nat.toText(id));
       return false;
     };
@@ -564,7 +565,7 @@ persistent actor {
       description = description;
       challengeType = challengeType;
       points = points;
-      markdownMessage = markdownMessage;
+      markdownMessage = ?markdownMessage;
       disabled = challenges[index].disabled; // Preserve existing disabled status
     };
     challenges := Array.tabulate<Challenge>(
@@ -919,7 +920,7 @@ persistent actor {
   };
 
   // Calculate follower points using the specified algorithm
-  private func calculateFollowerPoints(followers : Nat) : Nat {
+  func calculateFollowerPoints(followers : Nat) : Nat {
     var points : Nat = 0;
     var score : Nat = followers;
     while (score > 10) {
@@ -931,9 +932,9 @@ persistent actor {
   };
 
   // Update user points after challenge completion
-  private func awardChallengePoints(caller : Principal, challengeId : Nat) : () {
+  func awardChallengePoints(caller : Principal, challengeId : Nat) : () {
     // Find the challenge to get its points value
-    let ?index = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = null; disabled = false }, challenges, func(a, b) = a.id == b.id) else {
+    let ?index = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = ?""; disabled = false }, challenges, func(a, b) = a.id == b.id) else {
       Debug.print("Challenge not found for points award: " # Nat.toText(challengeId));
       return;
     };
@@ -1004,7 +1005,7 @@ persistent actor {
   };
 
   // Calculate user points dynamically by checking challenge completion
-  private func calculateUserPoints(user : Principal) : {
+  func calculateUserPoints(user : Principal) : {
     challengePoints : Nat;
     followerPoints : Nat;
     totalPoints : Nat;

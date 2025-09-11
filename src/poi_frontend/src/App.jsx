@@ -48,17 +48,16 @@ function AuthApp() {
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">
-                Join POI
-              </h2>
+              <h2 className="text-2xl font-bold text-white mb-2">Join POI</h2>
               <p className="text-slate-400 mb-4">
-                Sign in to earn points, complete challenges, and climb the leaderboard!
+                Sign in to earn points, complete challenges, and climb the
+                leaderboard!
               </p>
-               <div className="bg-slate-700/50 rounded-lg p-3 mb-4">
-                 <p className="text-sm text-slate-300">
-                   🚀 Join the competition and start earning points today!
-                 </p>
-               </div>
+              <div className="bg-slate-700/50 rounded-lg p-3 mb-4">
+                <p className="text-sm text-slate-300">
+                  🚀 Join the competition and start earning points today!
+                </p>
+              </div>
             </div>
             <button
               onClick={login}
@@ -96,9 +95,17 @@ function AuthApp() {
               </div>
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => setActiveView(activeView === "dashboard" ? "profile" : "dashboard")}
+                  onClick={() =>
+                    setActiveView(
+                      activeView === "dashboard" ? "profile" : "dashboard",
+                    )
+                  }
                   className="flex items-center gap-3 hover:bg-slate-700 rounded-lg px-3 py-2 transition-colors cursor-pointer"
-                  title={activeView === "dashboard" ? "Go to Profile" : "Go to Dashboard"}
+                  title={
+                    activeView === "dashboard"
+                      ? "Go to Profile"
+                      : "Go to Dashboard"
+                  }
                 >
                   <div className="text-right">
                     <p className="text-white text-sm font-medium">
@@ -139,11 +146,13 @@ function AuthApp() {
             </div>
           </header>
 
-           {/* Content Area */}
-           <main className="max-w-6xl mx-auto p-8">
-             {activeView === "dashboard" && <Dashboard onNavigate={setActiveView} />}
-             {activeView === "profile" && <UserProfile />}
-           </main>
+          {/* Content Area */}
+          <main className="max-w-6xl mx-auto p-8">
+            {activeView === "dashboard" && (
+              <Dashboard onNavigate={setActiveView} />
+            )}
+            {activeView === "profile" && <UserProfile />}
+          </main>
         </div>
       )}
     </div>

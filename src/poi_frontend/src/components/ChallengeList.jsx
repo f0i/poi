@@ -99,7 +99,8 @@ function ChallengeList() {
     if (
       !newChallenge.description ||
       !newChallenge.userToFollow ||
-      !newChallenge.points
+      !newChallenge.points ||
+      !newChallenge.markdownMessage?.trim()
     )
       return;
 
@@ -110,9 +111,14 @@ function ChallengeList() {
         newChallenge.description,
         challengeType,
         points,
-        newChallenge.markdownMessage || null,
+        newChallenge.markdownMessage,
       );
-      setNewChallenge({ description: "", userToFollow: "", points: "", markdownMessage: "" });
+      setNewChallenge({
+        description: "",
+        userToFollow: "",
+        points: "",
+        markdownMessage: "",
+      });
       setShowCreateForm(false);
       loadChallenges(); // Refresh the list
     } catch (error) {
@@ -143,15 +149,23 @@ function ChallengeList() {
 
   const handleUpdateChallenge = async (e) => {
     e.preventDefault();
-    console.log("🔍 DEBUG: handleUpdateChallenge called", { editingChallenge, editForm });
+    console.log("🔍 DEBUG: handleUpdateChallenge called", {
+      editingChallenge,
+      editForm,
+    });
 
-    if (!editingChallenge) {
+    if (editingChallenge == null) {
       console.log("🔍 DEBUG: No editingChallenge, returning");
       return;
     }
 
     // Validate form
-    if (!editForm.description.trim() || !editForm.userToFollow.trim() || !editForm.points) {
+    if (
+      !editForm.description.trim() ||
+      !editForm.userToFollow.trim() ||
+      !editForm.points ||
+      !editForm.markdownMessage?.trim()
+    ) {
       alert("Please fill in all required fields");
       return;
     }
@@ -165,7 +179,7 @@ function ChallengeList() {
         description: editForm.description,
         challengeType,
         points,
-        markdownMessage: editForm.markdownMessage
+        markdownMessage: editForm.markdownMessage,
       });
 
       const result = await challengeService.updateChallenge(
@@ -173,21 +187,26 @@ function ChallengeList() {
         editForm.description,
         challengeType,
         points,
-        editForm.markdownMessage || null,
+        editForm.markdownMessage,
       );
 
       console.log("🔍 DEBUG: challengeService.updateChallenge result:", result);
 
       // Show success message
-      alert('Challenge updated successfully!');
+      alert("Challenge updated successfully!");
 
       setEditingChallenge(null);
-      setEditForm({ description: "", userToFollow: "", points: "", markdownMessage: "" });
+      setEditForm({
+        description: "",
+        userToFollow: "",
+        points: "",
+        markdownMessage: "",
+      });
       loadChallenges(); // Refresh the list
     } catch (error) {
       console.error("Failed to update challenge:", error);
       // Show error to user
-      alert(`Failed to update challenge: ${error.message || 'Unknown error'}`);
+      alert(`Failed to update challenge: ${error.message || "Unknown error"}`);
     } finally {
       setUpdatingChallenge(null);
     }
@@ -367,42 +386,44 @@ function ChallengeList() {
               </p>
             </div>
 
-             <div>
-               <label className="label">Points Reward</label>
-               <input
-                 type="number"
-                 value={newChallenge.points}
-                 onChange={(e) =>
-                   setNewChallenge({ ...newChallenge, points: e.target.value })
-                 }
-                 className="input-field w-full"
-                 placeholder="e.g., 100"
-                 min="1"
-                 required
-               />
-               <p className="text-slate-400 text-sm mt-1">
-                 Points awarded to users who complete this challenge
-               </p>
-             </div>
+            <div>
+              <label className="label">Points Reward</label>
+              <input
+                type="number"
+                value={newChallenge.points}
+                onChange={(e) =>
+                  setNewChallenge({ ...newChallenge, points: e.target.value })
+                }
+                className="input-field w-full"
+                placeholder="e.g., 100"
+                min="1"
+                required
+              />
+              <p className="text-slate-400 text-sm mt-1">
+                Points awarded to users who complete this challenge
+              </p>
+            </div>
 
-             <div>
-               <label className="label">Additional Information (Markdown)</label>
-               <textarea
-                 value={newChallenge.markdownMessage}
-                 onChange={(e) =>
-                   setNewChallenge({
-                     ...newChallenge,
-                     markdownMessage: e.target.value,
-                   })
-                 }
-                 className="input-field w-full"
-                 placeholder="Add extra details, promotional content, or explanations using Markdown..."
-                 rows={4}
-               />
-               <p className="text-slate-400 text-sm mt-1">
-                 Optional: Add additional information that will be displayed with the challenge
-               </p>
-             </div>
+            <div>
+              <label className="label">Additional Information (Markdown)</label>
+              <textarea
+                value={newChallenge.markdownMessage}
+                onChange={(e) =>
+                  setNewChallenge({
+                    ...newChallenge,
+                    markdownMessage: e.target.value,
+                  })
+                }
+                className="input-field w-full"
+                placeholder="Add extra details, promotional content, or explanations using Markdown..."
+                rows={4}
+                required
+              />
+              <p className="text-slate-400 text-sm mt-1">
+                Optional: Add additional information that will be displayed with
+                the challenge
+              </p>
+            </div>
 
             <div className="flex space-x-3">
               <button type="submit" className="btn-primary">
@@ -479,31 +500,31 @@ function ChallengeList() {
                 </p>
               </div>
 
-                <div className="grid grid-cols-1 gap-4">
-                 {challenges.map((challenge) => (
-                    <div
-                      key={challenge.id.toString()}
-                      className={`rounded-xl p-5 border transition-all duration-200 shadow-sm hover:shadow-md ${
-                        challenge.disabled
-                          ? "bg-slate-800/30 border-slate-700/50 opacity-75"
-                          : "bg-slate-700/50 border-slate-600 hover:border-slate-500 hover:bg-slate-700/70"
-                      }`}
-                    >
+              <div className="grid grid-cols-1 gap-4">
+                {challenges.map((challenge) => (
+                  <div
+                    key={challenge.id.toString()}
+                    className={`rounded-xl p-5 border transition-all duration-200 shadow-sm hover:shadow-md ${
+                      challenge.disabled
+                        ? "bg-slate-800/30 border-slate-700/50 opacity-75"
+                        : "bg-slate-700/50 border-slate-600 hover:border-slate-500 hover:bg-slate-700/70"
+                    }`}
+                  >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                          <div className="text-white mb-4 leading-relaxed">
-                            <ReactMarkdown className="prose prose-invert prose-sm max-w-none">
-                              {challenge.description}
+                        <div className="text-white mb-4 leading-relaxed">
+                          <ReactMarkdown className="prose prose-invert prose-sm max-w-none">
+                            {challenge.description}
+                          </ReactMarkdown>
+                        </div>
+
+                        {challenge.markdownMessage && (
+                          <div className="text-slate-300 mb-4 leading-relaxed border-l-2 border-blue-500/30 pl-4">
+                            <ReactMarkdown className="prose prose-invert prose-xs max-w-none">
+                              {challenge.markdownMessage}
                             </ReactMarkdown>
                           </div>
-
-                          {challenge.markdownMessage && (
-                            <div className="text-slate-300 mb-4 leading-relaxed border-l-2 border-blue-500/30 pl-4">
-                              <ReactMarkdown className="prose prose-invert prose-xs max-w-none">
-                                {challenge.markdownMessage}
-                              </ReactMarkdown>
-                            </div>
-                          )}
+                        )}
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                           <div className="flex items-center space-x-3">
@@ -620,184 +641,192 @@ function ChallengeList() {
                         )}
                       </div>
 
-                       {/* Disabled Indicator */}
-                       {challenge.disabled && (
-                         <div className="mb-4">
-                           <div className="bg-amber-900/20 border border-amber-600/50 rounded-lg p-3">
-                             <div className="flex items-center space-x-2">
-                               <svg
-                                 className="w-5 h-5 text-amber-500"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 viewBox="0 0 24 24"
-                               >
-                                 <path
-                                   strokeLinecap="round"
-                                   strokeLinejoin="round"
-                                   strokeWidth={2}
-                                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                                 />
-                               </svg>
-                               <span className="text-amber-400 font-medium">
-                                 This challenge is currently disabled
-                               </span>
-                             </div>
-                             <p className="text-amber-300 text-sm mt-1">
-                               This challenge was active for a limited time and is no longer accepting new verifications.
-                             </p>
-                           </div>
-                         </div>
-                       )}
+                      {/* Disabled Indicator */}
+                      {challenge.disabled && (
+                        <div className="mb-4">
+                          <div className="bg-amber-900/20 border border-amber-600/50 rounded-lg p-3">
+                            <div className="flex items-center space-x-2">
+                              <svg
+                                className="w-5 h-5 text-amber-500"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                                />
+                              </svg>
+                              <span className="text-amber-400 font-medium">
+                                This challenge is currently disabled
+                              </span>
+                            </div>
+                            <p className="text-amber-300 text-sm mt-1">
+                              This challenge was active for a limited time and
+                              is no longer accepting new verifications.
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-                       {/* Admin Actions */}
-                       {isAdmin && (
-                         <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-600">
-                           {/* Show verify button only if challenge is enabled and not already verified */}
-                           {!challenge.disabled && !(
-                             challengeStatuses[challenge.id] &&
-                             challengeStatuses[challenge.id].verified !==
-                               undefined
-                           ) && (
-                             <button
-                               onClick={() =>
-                                 handleVerifyChallenge(challenge.id)
-                               }
-                               disabled={
-                                 verifyingChallenge === challenge.id ||
-                                 rateLimitedChallenges[challenge.id] ||
-                                 (verificationResults[challenge.id] &&
-                                   verificationResults[challenge.id].error &&
-                                   verificationResults[
-                                     challenge.id
-                                   ].error.includes("permanently blocked"))
-                               }
-                               className={`text-sm px-4 py-2 flex items-center justify-center ${
-                                 verificationResults[challenge.id] &&
-                                 verificationResults[challenge.id].error &&
-                                 verificationResults[
-                                   challenge.id
-                                 ].error.includes("permanently blocked")
-                                   ? "btn-danger opacity-50 cursor-not-allowed"
-                                   : rateLimitedChallenges[challenge.id]
-                                     ? "btn-secondary opacity-50 cursor-not-allowed"
-                                     : "btn-primary"
-                               }`}
-                               title={
-                                 verificationResults[challenge.id] &&
-                                 verificationResults[challenge.id].error &&
-                                 verificationResults[
-                                   challenge.id
-                                 ].error.includes("permanently blocked")
-                                   ? "Account permanently blocked"
-                                   : rateLimitedChallenges[challenge.id]
-                                     ? "Rate limited - please wait"
-                                     : "Verify challenge"
-                               }
-                             >
-                               {verifyingChallenge === challenge.id ? (
-                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                               ) : (
-                                 <>
-                                   <svg
-                                     className="w-4 h-4 mr-2"
-                                     fill="none"
-                                     stroke="currentColor"
-                                     viewBox="0 0 24 24"
-                                   >
-                                     <path
-                                       strokeLinecap="round"
-                                       strokeLinejoin="round"
-                                       strokeWidth={2}
-                                       d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                     />
-                                   </svg>
-                                   Verify Challenge
-                                 </>
-                               )}
-                             </button>
-                           )}
+                      {/* Admin Actions */}
+                      {isAdmin && (
+                        <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-600">
+                          {/* Show verify button only if challenge is enabled and not already verified */}
+                          {!challenge.disabled &&
+                            !(
+                              challengeStatuses[challenge.id] &&
+                              challengeStatuses[challenge.id].verified !==
+                                undefined
+                            ) && (
+                              <button
+                                onClick={() =>
+                                  handleVerifyChallenge(challenge.id)
+                                }
+                                disabled={
+                                  verifyingChallenge === challenge.id ||
+                                  rateLimitedChallenges[challenge.id] ||
+                                  (verificationResults[challenge.id] &&
+                                    verificationResults[challenge.id].error &&
+                                    verificationResults[
+                                      challenge.id
+                                    ].error.includes("permanently blocked"))
+                                }
+                                className={`text-sm px-4 py-2 flex items-center justify-center ${
+                                  verificationResults[challenge.id] &&
+                                  verificationResults[challenge.id].error &&
+                                  verificationResults[
+                                    challenge.id
+                                  ].error.includes("permanently blocked")
+                                    ? "btn-danger opacity-50 cursor-not-allowed"
+                                    : rateLimitedChallenges[challenge.id]
+                                      ? "btn-secondary opacity-50 cursor-not-allowed"
+                                      : "btn-primary"
+                                }`}
+                                title={
+                                  verificationResults[challenge.id] &&
+                                  verificationResults[challenge.id].error &&
+                                  verificationResults[
+                                    challenge.id
+                                  ].error.includes("permanently blocked")
+                                    ? "Account permanently blocked"
+                                    : rateLimitedChallenges[challenge.id]
+                                      ? "Rate limited - please wait"
+                                      : "Verify challenge"
+                                }
+                              >
+                                {verifyingChallenge === challenge.id ? (
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                ) : (
+                                  <>
+                                    <svg
+                                      className="w-4 h-4 mr-2"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                      />
+                                    </svg>
+                                    Verify Challenge
+                                  </>
+                                )}
+                              </button>
+                            )}
 
-                           {/* Edit Button */}
-                           <button
-                             onClick={() => handleEditChallenge(challenge)}
-                             className="btn-secondary text-sm px-4 py-2 flex items-center justify-center"
-                             title="Edit challenge"
-                           >
-                             <svg
-                               className="w-4 h-4 mr-2"
-                               fill="none"
-                               stroke="currentColor"
-                               viewBox="0 0 24 24"
-                             >
-                               <path
-                                 strokeLinecap="round"
-                                 strokeLinejoin="round"
-                                 strokeWidth={2}
-                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                               />
-                             </svg>
-                             Edit Challenge
-                           </button>
+                          {/* Edit Button */}
+                          <button
+                            onClick={() => handleEditChallenge(challenge)}
+                            className="btn-secondary text-sm px-4 py-2 flex items-center justify-center"
+                            title="Edit challenge"
+                          >
+                            <svg
+                              className="w-4 h-4 mr-2"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                              />
+                            </svg>
+                            Edit Challenge
+                          </button>
 
-                           {/* Disable/Enable Button */}
-                           <button
-                             onClick={() =>
-                               challenge.disabled
-                                 ? handleEnableChallenge(challenge.id)
-                                 : handleDisableChallenge(challenge.id)
-                             }
-                             className={`text-sm px-4 py-2 flex items-center justify-center ${
-                               challenge.disabled ? "btn-primary" : "btn-secondary"
-                             }`}
-                             title={challenge.disabled ? "Enable challenge" : "Disable challenge"}
-                           >
-                             <svg
-                               className="w-4 h-4 mr-2"
-                               fill="none"
-                               stroke="currentColor"
-                               viewBox="0 0 24 24"
-                             >
-                               {challenge.disabled ? (
-                                 <path
-                                   strokeLinecap="round"
-                                   strokeLinejoin="round"
-                                   strokeWidth={2}
-                                   d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l.707.707A1 1 0 0012.414 11H13m-3 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                 />
-                               ) : (
-                                 <path
-                                   strokeLinecap="round"
-                                   strokeLinejoin="round"
-                                   strokeWidth={2}
-                                   d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                                 />
-                               )}
-                             </svg>
-                             {challenge.disabled ? "Enable" : "Disable"}
-                           </button>
+                          {/* Disable/Enable Button */}
+                          <button
+                            onClick={() =>
+                              challenge.disabled
+                                ? handleEnableChallenge(challenge.id)
+                                : handleDisableChallenge(challenge.id)
+                            }
+                            className={`text-sm px-4 py-2 flex items-center justify-center ${
+                              challenge.disabled
+                                ? "btn-primary"
+                                : "btn-secondary"
+                            }`}
+                            title={
+                              challenge.disabled
+                                ? "Enable challenge"
+                                : "Disable challenge"
+                            }
+                          >
+                            <svg
+                              className="w-4 h-4 mr-2"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              {challenge.disabled ? (
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l.707.707A1 1 0 0012.414 11H13m-3 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                              ) : (
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                                />
+                              )}
+                            </svg>
+                            {challenge.disabled ? "Enable" : "Disable"}
+                          </button>
 
-                           <button
-                             onClick={() => handleDeleteChallenge(challenge.id)}
-                             className="btn-danger text-sm px-4 py-2 flex items-center justify-center"
-                             title="Delete challenge"
-                           >
-                             <svg
-                               className="w-4 h-4 mr-2"
-                               fill="none"
-                               stroke="currentColor"
-                               viewBox="0 0 24 24"
-                             >
-                               <path
-                                 strokeLinecap="round"
-                                 strokeLinejoin="round"
-                                 strokeWidth={2}
-                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                               />
-                             </svg>
-                             Delete Challenge
-                           </button>
-                         </div>
-                       )}
+                          <button
+                            onClick={() => handleDeleteChallenge(challenge.id)}
+                            className="btn-danger text-sm px-4 py-2 flex items-center justify-center"
+                            title="Delete challenge"
+                          >
+                            <svg
+                              className="w-4 h-4 mr-2"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                            Delete Challenge
+                          </button>
+                        </div>
+                      )}
 
                       {/* Verification Result */}
                       {verificationResults[challenge.id] && (
@@ -919,130 +948,150 @@ function ChallengeList() {
                             </div>
                           )}
                         </div>
-                       )}
+                      )}
+                    </div>
+                  </div>
+                ))}
 
+                {/* Edit Form - Separate section below challenges */}
+                {challenges
+                  .map(
+                    (challenge) =>
+                      editingChallenge === challenge.id && (
+                        <div
+                          key={`edit-${challenge.id.toString()}`}
+                          className="mt-6 bg-slate-700 rounded-lg p-6 border border-slate-600"
+                        >
+                          <form
+                            onSubmit={handleUpdateChallenge}
+                            className="space-y-4"
+                          >
+                            <h5 className="text-white font-medium flex items-center">
+                              <svg
+                                className="w-5 h-5 mr-2 text-blue-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                />
+                              </svg>
+                              Edit Challenge
+                            </h5>
 
-                     </div>
-                   </div>
-                  ))}
-
-                  {/* Edit Form - Separate section below challenges */}
-                  {challenges.map((challenge) => (
-                    editingChallenge === challenge.id && (
-                      <div
-                        key={`edit-${challenge.id.toString()}`}
-                        className="mt-6 bg-slate-700 rounded-lg p-6 border border-slate-600"
-                      >
-                        <form onSubmit={handleUpdateChallenge} className="space-y-4">
-                          <h5 className="text-white font-medium flex items-center">
-                            <svg
-                              className="w-5 h-5 mr-2 text-blue-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                            <div>
+                              <label className="label text-sm">
+                                Challenge Description
+                              </label>
+                              <input
+                                type="text"
+                                value={editForm.description}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    description: e.target.value,
+                                  })
+                                }
+                                className="input-field w-full"
+                                required
                               />
-                            </svg>
-                            Edit Challenge
-                          </h5>
+                            </div>
 
-                          <div>
-                            <label className="label text-sm">Challenge Description</label>
-                            <input
-                              type="text"
-                              value={editForm.description}
-                              onChange={(e) =>
-                                setEditForm({
-                                  ...editForm,
-                                  description: e.target.value,
-                                })
-                              }
-                              className="input-field w-full"
-                              required
-                            />
-                          </div>
+                            <div>
+                              <label className="label text-sm">
+                                User Handle / Username
+                              </label>
+                              <input
+                                type="text"
+                                value={editForm.userToFollow}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    userToFollow: e.target.value,
+                                  })
+                                }
+                                className="input-field w-full"
+                                required
+                              />
+                            </div>
 
-                          <div>
-                            <label className="label text-sm">User Handle / Username</label>
-                            <input
-                              type="text"
-                              value={editForm.userToFollow}
-                              onChange={(e) =>
-                                setEditForm({
-                                  ...editForm,
-                                  userToFollow: e.target.value,
-                                })
-                              }
-                              className="input-field w-full"
-                              required
-                            />
-                          </div>
+                            <div>
+                              <label className="label text-sm">
+                                Points Reward
+                              </label>
+                              <input
+                                type="number"
+                                value={editForm.points}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    points: e.target.value,
+                                  })
+                                }
+                                className="input-field w-full"
+                                min="1"
+                                required
+                              />
+                            </div>
 
-                          <div>
-                            <label className="label text-sm">Points Reward</label>
-                            <input
-                              type="number"
-                              value={editForm.points}
-                              onChange={(e) =>
-                                setEditForm({ ...editForm, points: e.target.value })
-                              }
-                              className="input-field w-full"
-                              min="1"
-                              required
-                            />
-                          </div>
+                            <div>
+                              <label className="label text-sm">
+                                Additional Information (Markdown)
+                              </label>
+                              <textarea
+                                value={editForm.markdownMessage}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    markdownMessage: e.target.value,
+                                  })
+                                }
+                                className="input-field w-full"
+                                rows={3}
+                                required
+                              />
+                            </div>
 
-                          <div>
-                            <label className="label text-sm">Additional Information (Markdown)</label>
-                            <textarea
-                              value={editForm.markdownMessage}
-                              onChange={(e) =>
-                                setEditForm({
-                                  ...editForm,
-                                  markdownMessage: e.target.value,
-                                })
-                              }
-                              className="input-field w-full"
-                              rows={3}
-                            />
-                          </div>
-
-                          <div className="flex space-x-3">
-                            <button
-                              type="submit"
-                              disabled={updatingChallenge === editingChallenge}
-                              className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {updatingChallenge === editingChallenge ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                  Updating...
-                                </>
-                              ) : (
-                                'Update Challenge'
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEditingChallenge(null)}
-                              disabled={updatingChallenge === editingChallenge}
-                              className="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    )
-                  )).filter(Boolean)}
-                </div>
-             </div>
-           )}
+                            <div className="flex space-x-3">
+                              <button
+                                type="submit"
+                                disabled={
+                                  updatingChallenge === editingChallenge
+                                }
+                                className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {updatingChallenge === editingChallenge ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    Updating...
+                                  </>
+                                ) : (
+                                  "Update Challenge"
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingChallenge(null)}
+                                disabled={
+                                  updatingChallenge === editingChallenge
+                                }
+                                className="btn-secondary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </form>
+                        </div>
+                      ),
+                  )
+                  .filter(Boolean)}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -58,95 +58,115 @@ function UserProfile() {
           </div>
         </div>
       ) : userData ? (
-         <div className="card">
-           {/* Profile Header with Avatar */}
-           <div className="text-center mb-8">
-             <div className="relative inline-block mb-4">
-               {userData.avatar_url && userData.avatar_url.length > 0 ? (
-                 <img
-                   src={userData.avatar_url[0]}
-                   alt="Profile"
-                   className="w-24 h-24 rounded-full border-4 border-blue-500/50 object-cover mx-auto"
-                   onError={(e) => {
-                     e.target.style.display = "none";
-                     e.target.nextSibling.style.display = "flex";
-                   }}
-                 />
-               ) : null}
-               <div
-                 className={`w-24 h-24 bg-slate-600 rounded-full flex items-center justify-center mx-auto border-4 border-blue-500/50 ${userData.avatar_url && userData.avatar_url.length > 0 ? "hidden" : ""}`}
-               >
-                 <svg
-                   className="w-12 h-12 text-slate-400"
-                   fill="none"
-                   stroke="currentColor"
-                   viewBox="0 0 24 24"
-                 >
-                   <path
-                     strokeLinecap="round"
-                     strokeLinejoin="round"
-                     strokeWidth={2}
-                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                   />
-                 </svg>
-               </div>
-             </div>
+        <div className="card">
+          {/* Profile Header with Avatar */}
+          <div className="text-center mb-8">
+            <div className="relative inline-block mb-4">
+              {userData.avatar_url && userData.avatar_url.length > 0 ? (
+                <img
+                  src={userData.avatar_url[0]}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-full border-4 border-blue-500/50 object-cover mx-auto"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                    e.target.nextSibling.style.display = "flex";
+                  }}
+                />
+              ) : null}
+              <div
+                className={`w-24 h-24 bg-slate-600 rounded-full flex items-center justify-center mx-auto border-4 border-blue-500/50 ${userData.avatar_url && userData.avatar_url.length > 0 ? "hidden" : ""}`}
+              >
+                <svg
+                  className="w-12 h-12 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+            </div>
 
-             <div className="space-y-2">
-               {userData.name && userData.name.length > 0 && (
-                 <h1 className="text-2xl font-bold text-white">{userData.name[0]}</h1>
-               )}
-               {userData.username && userData.username.length > 0 && (
-                 <p className="text-xl text-blue-400 font-medium">@{userData.username[0]}</p>
-               )}
-             </div>
-           </div>
+            <div className="space-y-2">
+              {userData.name && userData.name.length > 0 && (
+                <h1 className="text-2xl font-bold text-white">
+                  {userData.name[0]}
+                </h1>
+              )}
+              {userData.username && userData.username.length > 0 && (
+                <p className="text-xl text-blue-400 font-medium">
+                  @{userData.username[0]}
+                </p>
+              )}
+            </div>
+          </div>
 
-           {/* Social Stats - Prominent Display */}
-           {(userData.followers_count || userData.following_count) && (
-             <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-xl p-6 border border-blue-500/30 mb-6">
-               <div className="text-center mb-4">
-                 <h4 className="text-white font-semibold text-lg">Social Influence</h4>
-               </div>
-               <div className="flex justify-center space-x-8">
-                 {userData.followers_count && userData.followers_count.length > 0 && (
-                   <div className="text-center">
-                     <div className="text-3xl font-bold text-green-400 mb-1">
-                       {formatNumber(userData.followers_count[0])}
-                     </div>
-                     <div className="text-slate-300 text-sm font-medium">Followers</div>
-                   </div>
-                 )}
-                 {userData.following_count && userData.following_count.length > 0 && (
-                   <div className="text-center">
-                     <div className="text-3xl font-bold text-blue-400 mb-1">
-                       {formatNumber(userData.following_count[0])}
-                     </div>
-                     <div className="text-slate-300 text-sm font-medium">Following</div>
-                   </div>
-                 )}
-               </div>
-             </div>
-           )}
+          {/* Social Stats - Prominent Display */}
+          {(userData.followers_count || userData.following_count) && (
+            <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-xl p-6 border border-blue-500/30 mb-6">
+              <div className="text-center mb-4">
+                <h4 className="text-white font-semibold text-lg">
+                  Social Influence
+                </h4>
+              </div>
+              <div className="flex justify-center space-x-8">
+                {userData.followers_count &&
+                  userData.followers_count.length > 0 && (
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-green-400 mb-1">
+                        {formatNumber(userData.followers_count[0])}
+                      </div>
+                      <div className="text-slate-300 text-sm font-medium">
+                        Followers
+                      </div>
+                    </div>
+                  )}
+                {userData.following_count &&
+                  userData.following_count.length > 0 && (
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-blue-400 mb-1">
+                        {formatNumber(userData.following_count[0])}
+                      </div>
+                      <div className="text-slate-300 text-sm font-medium">
+                        Following
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+          )}
 
-           {/* Additional Info - Less Prominent */}
-           {(userData.email || userData.location) && (
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-               {userData.email && userData.email.length > 0 && (
-                 <div className="bg-slate-700/30 rounded-lg p-4 border border-slate-600/50">
-                   <div className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-1">Email</div>
-                   <div className="text-white font-medium">{userData.email[0]}</div>
-                 </div>
-               )}
+          {/* Additional Info - Less Prominent */}
+          {(userData.email || userData.location) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {userData.email && userData.email.length > 0 && (
+                <div className="bg-slate-700/30 rounded-lg p-4 border border-slate-600/50">
+                  <div className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-1">
+                    Email
+                  </div>
+                  <div className="text-white font-medium">
+                    {userData.email[0]}
+                  </div>
+                </div>
+              )}
 
-               {userData.location && userData.location.length > 0 && (
-                 <div className="bg-slate-700/30 rounded-lg p-4 border border-slate-600/50">
-                   <div className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-1">Location</div>
-                   <div className="text-white font-medium">{userData.location[0]}</div>
-                 </div>
-               )}
-             </div>
-           )}
+              {userData.location && userData.location.length > 0 && (
+                <div className="bg-slate-700/30 rounded-lg p-4 border border-slate-600/50">
+                  <div className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-1">
+                    Location
+                  </div>
+                  <div className="text-white font-medium">
+                    {userData.location[0]}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Points Stats */}
           {userPoints && (
@@ -215,39 +235,41 @@ function UserProfile() {
             </div>
           )}
 
-           {/* Challenges Section */}
-           <div className="mt-6">
-             <ChallengeList />
-           </div>
+          {/* Challenges Section */}
+          <div className="mt-6">
+            <ChallengeList />
+          </div>
 
-           {/* Settings Section - Admin Only */}
-           {isAdmin && (
-             <div className="mt-6">
-               <Settings />
-             </div>
-           )}
+          {/* Settings Section - Admin Only */}
+          {isAdmin && (
+            <div className="mt-6">
+              <Settings />
+            </div>
+          )}
 
-            {/* Principal ID - Moved to bottom */}
-            <div className="mt-6 pt-4 border-t border-slate-700">
-              <div className="text-center">
-                <div className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2">Principal ID</div>
-                <div className="bg-slate-700 rounded-lg p-3">
-                  <p className="text-slate-300 text-xs font-mono break-all">
-                    {identity?.getPrincipal().toString()}
-                  </p>
-                </div>
+          {/* Principal ID - Moved to bottom */}
+          <div className="mt-6 pt-4 border-t border-slate-700">
+            <div className="text-center">
+              <div className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2">
+                Principal ID
+              </div>
+              <div className="bg-slate-700 rounded-lg p-3">
+                <p className="text-slate-300 text-xs font-mono break-all">
+                  {identity?.getPrincipal().toString()}
+                </p>
               </div>
             </div>
+          </div>
 
-            {/* Logout Button - Less prominent */}
-            <div className="mt-4 text-center">
-              <button
-                onClick={logout}
-                className="text-slate-400 hover:text-slate-300 text-sm underline transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
+          {/* Logout Button - Less prominent */}
+          <div className="mt-4 text-center">
+            <button
+              onClick={logout}
+              className="text-slate-400 hover:text-slate-300 text-sm underline transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       ) : (
         <div className="card text-center">
