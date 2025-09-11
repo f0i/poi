@@ -18,11 +18,11 @@ function FeedbackModal({ isOpen, onClose }) {
         </div>
 
         {/* Feedback Form Content */}
-        <div className="p-6">
+        <div className="p-0">
           <iframe
             src="https://feedback-g5y.caffeine.xyz?app=poi&embed=iframe"
             width="100%"
-            height="600"
+            height="650"
             style={{ border: 'none' }}
             title="Feedback Form"
             className="rounded-lg"
