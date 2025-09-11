@@ -87,11 +87,11 @@ function AuthApp() {
                   {activeView === "dashboard" && "POI"}
                   {activeView === "profile" && "Profile"}
                 </h1>
-                {activeView === "dashboard" && (
-                  <span className="text-slate-400 text-sm">
-                    Points Platform
-                  </span>
-                )}
+                 {activeView === "dashboard" && (
+                   <span className="text-slate-400 text-sm">
+                     Social Media Influence Platform
+                   </span>
+                 )}
               </div>
               <div className="flex items-center gap-4">
                 <button

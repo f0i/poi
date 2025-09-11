@@ -157,7 +157,9 @@ function Leaderboard({ onNavigate }) {
           </svg>
         </div>
         <h2 className="text-3xl font-bold text-white mb-4">
-          Proof of Influence Leaderboard
+          Proof of Influence
+          <br />
+          <span className="text-2xl font-semibold text-blue-400">Leaderboard</span>
         </h2>
         <p className="text-slate-400 text-lg max-w-2xl mx-auto">
           Compete with the community by completing challenges and growing your
