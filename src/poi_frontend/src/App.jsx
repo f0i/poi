@@ -81,74 +81,26 @@ function AuthApp() {
       {/* Authenticated app */}
       {isAuthenticated && (
         <div className="min-h-screen bg-slate-900">
-          {/* Header */}
-          <header className="bg-slate-800 border-b border-slate-700 px-8 py-4">
-            <div className="max-w-6xl mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <h1 className="text-white text-2xl font-bold">
-                  {activeView === "dashboard" && "POI"}
-                  {activeView === "profile" && "Profile"}
-                </h1>
-                 {activeView === "dashboard" && (
-                   <span className="text-slate-400 text-sm">
-                     Social Media Influence Platform
-                   </span>
-                 )}
-              </div>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() =>
-                    setActiveView(
-                      activeView === "dashboard" ? "profile" : "dashboard",
-                    )
-                  }
-                  className="flex items-center gap-3 hover:bg-slate-700 rounded-lg px-3 py-2 transition-colors cursor-pointer"
-                  title={
-                    activeView === "dashboard"
-                      ? "Go to Profile"
-                      : "Go to Dashboard"
-                  }
-                >
-                  <div className="text-right">
-                    <p className="text-white text-sm font-medium">
-                      {userData?.name?.[0] || userData?.username?.[0] || "User"}
-                    </p>
-                    <p className="text-slate-400 text-xs">
-                      @{userData?.username?.[0] || "user"}
-                    </p>
-                  </div>
-                  {userData?.avatar_url?.[0] ? (
-                    <img
-                      src={userData.avatar_url[0]}
-                      alt="Profile"
-                      className="w-8 h-8 rounded-full border border-slate-600"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                      }}
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full border border-slate-600 flex items-center justify-center">
-                      <svg
-                        className="w-4 h-4 text-slate-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                        />
-                      </svg>
-                    </div>
-                   )}
-                 </button>
+           {/* Header */}
+           <header className="bg-slate-800 border-b border-slate-700 p-8">
+             <div className="max-w-6xl mx-auto flex items-center justify-between">
+               <div className="flex items-center gap-4">
+                 <h1 className="text-white text-2xl font-bold">
+                   {activeView === "dashboard" && "POI"}
+                   {activeView === "profile" && "Profile"}
+                 </h1>
+                  {activeView === "dashboard" && (
+                    <span className="text-slate-400 text-sm">
+                      Social Media Influence Platform
+                    </span>
+                  )}
+               </div>
 
-                 {/* Feedback Button */}
+               {/* Centered Feedback Button */}
+               <div className="flex-1 flex justify-center">
                  <button
                    onClick={() => setShowFeedback(true)}
-                   className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-slate-700"
+                   className="btn-secondary flex items-center gap-2 px-4 py-2"
                    title="Give Feedback"
                  >
                    <svg
@@ -167,6 +119,57 @@ function AuthApp() {
                    <span className="hidden sm:inline text-sm font-medium">Feedback</span>
                  </button>
                </div>
+
+               <div className="flex items-center gap-4">
+                 <button
+                   onClick={() =>
+                     setActiveView(
+                       activeView === "dashboard" ? "profile" : "dashboard",
+                     )
+                   }
+                   className="flex items-center gap-3 hover:bg-slate-700 rounded-lg px-3 py-2 transition-colors cursor-pointer"
+                   title={
+                     activeView === "dashboard"
+                       ? "Go to Profile"
+                       : "Go to Dashboard"
+                   }
+                 >
+                   <div className="text-right">
+                     <p className="text-white text-sm font-medium">
+                       {userData?.name?.[0] || userData?.username?.[0] || "User"}
+                     </p>
+                     <p className="text-slate-400 text-xs">
+                       @{userData?.username?.[0] || "user"}
+                     </p>
+                   </div>
+                   {userData?.avatar_url?.[0] ? (
+                     <img
+                       src={userData.avatar_url[0]}
+                       alt="Profile"
+                       className="w-8 h-8 rounded-full border border-slate-600"
+                       onError={(e) => {
+                         e.target.style.display = "none";
+                       }}
+                     />
+                   ) : (
+                     <div className="w-8 h-8 rounded-full border border-slate-600 flex items-center justify-center">
+                       <svg
+                         className="w-4 h-4 text-slate-400"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24"
+                       >
+                         <path
+                           strokeLinecap="round"
+                           strokeLinejoin="round"
+                           strokeWidth={2}
+                           d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                         />
+                       </svg>
+                     </div>
+                    )}
+                  </button>
+                </div>
             </div>
           </header>
 

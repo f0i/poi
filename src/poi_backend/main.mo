@@ -285,10 +285,17 @@ persistent actor {
             Principal.equal,
             ?cachedUser,
           ).0;
-          Debug.print("🔍 BACKEND: [FETCH] Stored user data in cache for principal: " # Principal.toText(principal));
+           Debug.print("🔍 BACKEND: [FETCH] Stored user data in cache for principal: " # Principal.toText(principal));
 
-          // Calculate and store initial points for new users
-          let existingPoints = Trie.find(userPoints, { key = principal; hash = Principal.hash(principal) }, Principal.equal);
+           // Check if caller is anonymous before storing points
+           if (Principal.isAnonymous(caller)) {
+             Debug.print("🔍 BACKEND: [FETCH] WARNING: Anonymous user attempted to store points - skipping points calculation");
+             Debug.print("🔍 BACKEND: [FETCH] ===== fetchUserData() END (SUCCESS - ANONYMOUS USER) =====");
+             return ?user;
+           };
+
+           // Calculate and store initial points for new users
+           let existingPoints = Trie.find(userPoints, { key = principal; hash = Principal.hash(principal) }, Principal.equal);
           switch (existingPoints) {
             case (null) {
               Debug.print("🔍 BACKEND: [FETCH] No existing points found, calculating initial follower points");
@@ -343,10 +350,16 @@ persistent actor {
     };
   };
 
-  // Get user data (from cache or fetch from external canister)
-  public shared ({ caller }) func getUserData(origin : Text) : async ?User {
-    Debug.print("🔍 BACKEND: ===== getUserData() START =====");
-    Debug.print("🔍 BACKEND: Getting user data for principal: " # Principal.toText(caller) # " with origin: " # origin);
+   // Get user data (from cache or fetch from external canister)
+   public shared ({ caller }) func getUserData(origin : Text) : async ?User {
+     // Check if caller is anonymous
+     if (Principal.isAnonymous(caller)) {
+       Debug.print("🔍 BACKEND: WARNING: Anonymous user attempted to get user data - returning null");
+       return null;
+     };
+
+     Debug.print("🔍 BACKEND: ===== getUserData() START =====");
+     Debug.print("🔍 BACKEND: Getting user data for principal: " # Principal.toText(caller) # " with origin: " # origin);
 
     // Check cache first
     let cachedOpt = Trie.find(userDataStore, { key = caller; hash = Principal.hash(caller) }, Principal.equal);
@@ -414,19 +427,35 @@ persistent actor {
     return result;
   };
 
-  // Refresh user data (force fetch from external canister)
-  public shared ({ caller }) func refreshUserData(origin : Text) : async ?User {
-    Debug.print("Refreshing user data for principal: " # Principal.toText(caller));
-    return await fetchUserData(caller, origin);
-  };
+   // Refresh user data (force fetch from external canister)
+   public shared ({ caller }) func refreshUserData(origin : Text) : async ?User {
+     // Check if caller is anonymous
+     if (Principal.isAnonymous(caller)) {
+       Debug.print("WARNING: Anonymous user attempted to refresh user data - returning null");
+       return null;
+     };
 
-  // Force refresh user data and recalculate points
-  public shared ({ caller }) func refreshUserPoints(origin : Text) : async {
-    challengePoints : Nat;
-    followerPoints : Nat;
-    totalPoints : Nat;
-  } {
-    Debug.print("Refreshing user points for principal: " # Principal.toText(caller));
+     Debug.print("Refreshing user data for principal: " # Principal.toText(caller));
+     return await fetchUserData(caller, origin);
+   };
+
+   // Force refresh user data and recalculate points
+   public shared ({ caller }) func refreshUserPoints(origin : Text) : async {
+     challengePoints : Nat;
+     followerPoints : Nat;
+     totalPoints : Nat;
+   } {
+     // Check if caller is anonymous
+     if (Principal.isAnonymous(caller)) {
+       Debug.print("WARNING: Anonymous user attempted to refresh points - returning zero points");
+       return {
+         challengePoints = 0;
+         followerPoints = 0;
+         totalPoints = 0;
+       };
+     };
+
+     Debug.print("Refreshing user points for principal: " # Principal.toText(caller));
 
     // Force refresh user data
     let _userData = await fetchUserData(caller, origin);
@@ -1027,13 +1056,19 @@ persistent actor {
     return points;
   };
 
-  // Update user points after challenge completion
-  func awardChallengePoints(caller : Principal, challengeId : Nat) : () {
-    // Find the challenge to get its points value
-    let ?index = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = ?""; disabled = false }, challenges, func(a, b) = a.id == b.id) else {
-      Debug.print("Challenge not found for points award: " # Nat.toText(challengeId));
-      return;
-    };
+   // Update user points after challenge completion
+   func awardChallengePoints(caller : Principal, challengeId : Nat) : () {
+     // Check if caller is anonymous - don't award points to anonymous users
+     if (Principal.isAnonymous(caller)) {
+       Debug.print("WARNING: Attempted to award challenge points to anonymous user - skipping");
+       return;
+     };
+
+     // Find the challenge to get its points value
+     let ?index = Array.indexOf<Challenge>({ id = challengeId; description = ""; challengeType = #follows({ user = "" }); points = 0; markdownMessage = ?""; disabled = false }, challenges, func(a, b) = a.id == b.id) else {
+       Debug.print("Challenge not found for points award: " # Nat.toText(challengeId));
+       return;
+     };
 
     let challenge = challenges[index];
     let challengePointsAwarded = challenge.points;
@@ -1456,13 +1491,18 @@ persistent actor {
     };
   };
 
-  // Verify challenge by checking Twitter following relationship
-  public shared ({ caller }) func verifyChallenge(challengeId : Nat) : async {
-    #success : Bool;
-    #error : Text;
-  } {
-    // Rate limiting checks
-    let now = Time.now();
+   // Verify challenge by checking Twitter following relationship
+   public shared ({ caller }) func verifyChallenge(challengeId : Nat) : async {
+     #success : Bool;
+     #error : Text;
+   } {
+     // Check if caller is anonymous
+     if (Principal.isAnonymous(caller)) {
+       return #error("Anonymous users cannot verify challenges. Please sign in first.");
+     };
+
+     // Rate limiting checks
+     let now = Time.now();
 
     // 0. Check if user is permanently blocked
     switch (Trie.find(permanentBlocks, { key = caller; hash = Principal.hash(caller) }, Principal.equal)) {
