@@ -1,28 +1,4 @@
-import { useEffect } from 'react';
-
 function FeedbackModal({ isOpen, onClose }) {
-  useEffect(() => {
-    if (isOpen) {
-      // Load the feedback script when modal opens
-      const script = document.createElement('script');
-      script.src = 'https://feedback-g5y.caffeine.xyz/feedback-embed.js';
-      script.async = true;
-      document.body.appendChild(script);
-
-      // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden';
-
-      return () => {
-        document.body.style.overflow = 'unset';
-        // Clean up script if needed
-        const existingScript = document.querySelector('script[src*="feedback-embed.js"]');
-        if (existingScript) {
-          document.body.removeChild(existingScript);
-        }
-      };
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
   return (
@@ -43,7 +19,14 @@ function FeedbackModal({ isOpen, onClose }) {
 
         {/* Feedback Form Content */}
         <div className="p-6">
-          <div data-feedback-app="poi" data-feedback-gateway="https://feedback-g5y.caffeine.xyz"></div>
+          <iframe
+            src="https://feedback-g5y.caffeine.xyz?app=poi&embed=iframe"
+            width="100%"
+            height="500"
+            style={{ border: 'none' }}
+            title="Feedback Form"
+            className="rounded-lg"
+          ></iframe>
         </div>
       </div>
     </div>
