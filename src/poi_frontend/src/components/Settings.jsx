@@ -15,6 +15,7 @@ function Settings() {
   const [currentAdmin, setCurrentAdmin] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [settingAdmin, setSettingAdmin] = useState(false);
+  const [loadingAdmin, setLoadingAdmin] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
   const [recalcResult, setRecalcResult] = useState(null);
   const [systemData, setSystemData] = useState(null);
@@ -51,6 +52,7 @@ function Settings() {
   };
 
   const loadAdminStatus = async () => {
+    setLoadingAdmin(true);
     try {
       const admin = await challengeService.getAdmin();
       setCurrentAdmin(admin);
@@ -63,6 +65,8 @@ function Settings() {
     } catch (error) {
       console.error("Failed to load admin status:", error);
       setIsAdmin(false);
+    } finally {
+      setLoadingAdmin(false);
     }
   };
 
@@ -243,12 +247,23 @@ function Settings() {
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
               <div className="flex items-center space-x-2">
-                <div
-                  className={`w-3 h-3 rounded-full ${currentAdmin ? "bg-green-500" : "bg-red-500"}`}
-                ></div>
-                <span className="text-slate-300">
-                  Admin: {currentAdmin ? "Set" : "Not Set"}
-                </span>
+                {loadingAdmin ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
+                    <span className="text-slate-300">
+                      Loading admin status...
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div
+                      className={`w-3 h-3 rounded-full ${currentAdmin ? "bg-green-500" : "bg-red-500"}`}
+                    ></div>
+                    <span className="text-slate-300">
+                      Admin: {currentAdmin ? "Set" : "Not Set"}
+                    </span>
+                  </>
+                )}
               </div>
               {isAdmin && (
                 <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full">
@@ -266,7 +281,7 @@ function Settings() {
               </div>
             )}
 
-            {!currentAdmin && (
+            {!loadingAdmin && !currentAdmin && (
               <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
                   <svg
@@ -296,7 +311,7 @@ function Settings() {
               </div>
             )}
 
-            {!currentAdmin && (
+            {!loadingAdmin && !currentAdmin && (
               <div className="flex space-x-3">
                 <button
                   onClick={handleSetAdmin}
@@ -631,16 +646,17 @@ function Settings() {
                             <label className="label text-sm">
                               User Principal
                             </label>
-                             <input
-                               type="text"
-                               value={userPrincipal}
-                               onChange={(e) => setUserPrincipal(e.target.value)}
-                               className="input-field w-full"
-                               placeholder="Enter full user principal (63 characters, base32)"
-                             />
-                             <p className="text-slate-400 text-xs mt-1">
-                               Enter the full 63-character principal string of the user you want to delete
-                             </p>
+                            <input
+                              type="text"
+                              value={userPrincipal}
+                              onChange={(e) => setUserPrincipal(e.target.value)}
+                              className="input-field w-full"
+                              placeholder="Enter full user principal (63 characters, base32)"
+                            />
+                            <p className="text-slate-400 text-xs mt-1">
+                              Enter the full 63-character principal string of
+                              the user you want to delete
+                            </p>
                           </div>
 
                           <div className="flex justify-center">

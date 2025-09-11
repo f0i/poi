@@ -396,7 +396,7 @@ function Leaderboard({ onNavigate }) {
                                       ? "—"
                                       : formatNumber(user.followerPoints)}
                                   </p>
-                                   <p className="text-slate-500">Reach</p>
+                                  <p className="text-slate-500">Reach</p>
                                 </div>
                               </div>
                             </div>
@@ -649,7 +649,7 @@ function Leaderboard({ onNavigate }) {
                       <div className="text-orange-400 font-bold text-lg mb-1">
                         {formatNumber(userPoints.followerPoints)}
                       </div>
-                       <p className="text-slate-400 text-sm">Reach Points</p>
+                      <p className="text-slate-400 text-sm">Reach Points</p>
                     </div>
                   </div>
                 </div>

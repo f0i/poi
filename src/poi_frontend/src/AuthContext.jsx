@@ -98,7 +98,7 @@ export const AuthProvider = ({ children }) => {
         idleTimeout: 30 * 60 * 1000, // 30 minutes in milliseconds
         disableDefaultIdleCallback: true, // Prevent automatic page reload
         captureScroll: false, // Don't capture scroll events
-        scrollDebounce: 100 // Default scroll debounce
+        scrollDebounce: 100, // Default scroll debounce
       };
 
       if (process.env.DFX_NETWORK === "ic") {
@@ -109,9 +109,18 @@ export const AuthProvider = ({ children }) => {
 
       // Debug logging for session configuration
       console.log("🔍 DEBUG AuthContext: Session configuration:");
-      console.log("🔍 DEBUG AuthContext: maxTimeToLive:", loginOptions.maxTimeToLive?.toString() + "n");
-      console.log("🔍 DEBUG AuthContext: idleOptions:", loginOptions.idleOptions);
-      console.log("🔍 DEBUG AuthContext: identityProvider:", loginOptions.identityProvider);
+      console.log(
+        "🔍 DEBUG AuthContext: maxTimeToLive:",
+        loginOptions.maxTimeToLive?.toString() + "n",
+      );
+      console.log(
+        "🔍 DEBUG AuthContext: idleOptions:",
+        loginOptions.idleOptions,
+      );
+      console.log(
+        "🔍 DEBUG AuthContext: identityProvider:",
+        loginOptions.identityProvider,
+      );
 
       await authClient.login(loginOptions);
     } catch (error) {
