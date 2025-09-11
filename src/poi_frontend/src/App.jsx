@@ -4,10 +4,12 @@ import { PointsProvider } from "./PointsContext";
 import Dashboard from "./components/Dashboard";
 import UserProfile from "./components/UserProfile";
 import Leaderboard from "./components/Leaderboard";
+import FeedbackModal from "./components/FeedbackModal";
 
 function AuthApp() {
   const { isAuthenticated, login, loading, userData } = useAuth();
   const [activeView, setActiveView] = React.useState("dashboard");
+  const [showFeedback, setShowFeedback] = React.useState(false);
 
   if (loading) {
     return (
@@ -140,9 +142,31 @@ function AuthApp() {
                         />
                       </svg>
                     </div>
-                  )}
-                </button>
-              </div>
+                   )}
+                 </button>
+
+                 {/* Feedback Button */}
+                 <button
+                   onClick={() => setShowFeedback(true)}
+                   className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-slate-700"
+                   title="Give Feedback"
+                 >
+                   <svg
+                     className="w-5 h-5"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24"
+                   >
+                     <path
+                       strokeLinecap="round"
+                       strokeLinejoin="round"
+                       strokeWidth={2}
+                       d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                     />
+                   </svg>
+                   <span className="hidden sm:inline text-sm font-medium">Feedback</span>
+                 </button>
+               </div>
             </div>
           </header>
 
@@ -151,10 +175,16 @@ function AuthApp() {
             {activeView === "dashboard" && (
               <Dashboard onNavigate={setActiveView} />
             )}
-             {activeView === "profile" && <UserProfile onBack={() => setActiveView("dashboard")} />}
-          </main>
-        </div>
-      )}
+              {activeView === "profile" && <UserProfile onBack={() => setActiveView("dashboard")} />}
+           </main>
+
+           {/* Feedback Modal */}
+           <FeedbackModal
+             isOpen={showFeedback}
+             onClose={() => setShowFeedback(false)}
+           />
+         </div>
+       )}
     </div>
   );
 }
