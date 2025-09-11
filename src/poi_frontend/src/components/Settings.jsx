@@ -23,7 +23,6 @@ function Settings() {
   const [deletingUser, setDeletingUser] = useState(false);
   const [deleteResult, setDeleteResult] = useState(null);
 
-
   const challengeService = new ChallengeService(identity);
 
   useEffect(() => {
@@ -135,7 +134,7 @@ function Settings() {
 
     if (
       !window.confirm(
-        `Are you sure you want to delete user ${userPrincipal}? This will permanently remove ALL data for this user including points, challenges, and verification history. This action cannot be undone.`,
+        `Are you sure you want to delete user with principal ${userPrincipal}? This will permanently remove ALL data for this user including points, challenges, and verification history. This action cannot be undone.`,
       )
     ) {
       return;
@@ -159,8 +158,6 @@ function Settings() {
       setDeletingUser(false);
     }
   };
-
-
 
   const handleSetToken = async (e) => {
     e.preventDefault();
@@ -460,283 +457,300 @@ function Settings() {
                         )}
                       </button>
 
-                       {systemData && (
-                         <div className="bg-slate-600 rounded-lg p-4 border border-slate-500 max-h-96 overflow-y-auto">
-                           <h6 className="text-white font-medium mb-3">
-                             System Data Overview
-                           </h6>
+                      {systemData && (
+                        <div className="bg-slate-600 rounded-lg p-4 border border-slate-500 max-h-96 overflow-y-auto">
+                          <h6 className="text-white font-medium mb-3">
+                            System Data Overview
+                          </h6>
 
-                           <div className="space-y-4">
-                             <div>
-                               <h6 className="text-blue-400 font-medium mb-2">
-                                 Challenges ({systemData.challenges.length})
-                               </h6>
-                               <div className="space-y-1">
-                                 {systemData.challenges.map(
-                                   (challenge, index) => (
-                                     <div
-                                       key={index}
-                                       className="text-slate-300 text-sm bg-slate-700 rounded p-2"
-                                     >
-                                       <strong>
-                                         ID{" "}
-                                         {typeof challenge.id === "bigint"
-                                           ? Number(challenge.id)
-                                           : parseInt(challenge.id)}
-                                         :
-                                       </strong>{" "}
-                                       {challenge.description} (
-                                       {typeof challenge.points === "bigint"
-                                         ? Number(challenge.points)
-                                         : parseInt(challenge.points)}{" "}
-                                       pts)
-                                     </div>
-                                   ),
-                                 )}
-                               </div>
-                             </div>
+                          <div className="space-y-4">
+                            <div>
+                              <h6 className="text-blue-400 font-medium mb-2">
+                                Challenges ({systemData.challenges.length})
+                              </h6>
+                              <div className="space-y-1">
+                                {systemData.challenges.map(
+                                  (challenge, index) => (
+                                    <div
+                                      key={index}
+                                      className="text-slate-300 text-sm bg-slate-700 rounded p-2"
+                                    >
+                                      <strong>
+                                        ID{" "}
+                                        {typeof challenge.id === "bigint"
+                                          ? Number(challenge.id)
+                                          : parseInt(challenge.id)}
+                                        :
+                                      </strong>{" "}
+                                      {challenge.description} (
+                                      {typeof challenge.points === "bigint"
+                                        ? Number(challenge.points)
+                                        : parseInt(challenge.points)}{" "}
+                                      pts)
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+                            </div>
 
-                             <div>
-                               <h6 className="text-green-400 font-medium mb-2">
-                                 Users ({systemData.users.length})
-                               </h6>
-                               <div className="space-y-2">
-                                 {systemData.users.map((user, index) => (
-                                   <div
-                                     key={index}
-                                     className="text-slate-300 text-sm bg-slate-700 rounded p-3"
-                                   >
-                                     <div className="flex justify-between items-start mb-2">
-                                       <div>
-                                         <strong>
-                                           {user.name || "Anonymous"}
-                                         </strong>
-                                         {user.username && (
-                                           <span className="text-slate-400">
-                                             {" "}
-                                             (@{user.username})
-                                           </span>
-                                         )}
-                                       </div>
-                                       <div className="text-right">
-                                         <div className="text-green-400 font-medium">
-                                           {typeof user.totalPoints === "bigint"
-                                             ? Number(user.totalPoints)
-                                             : parseInt(user.totalPoints)}{" "}
-                                           pts
-                                         </div>
-                                         <div className="text-xs text-slate-400">
-                                           {typeof user.challengePoints ===
-                                           "bigint"
-                                             ? Number(user.challengePoints)
-                                             : parseInt(
-                                                 user.challengePoints,
-                                               )}{" "}
-                                           +{" "}
-                                           {typeof user.followerPoints ===
-                                           "bigint"
-                                             ? Number(user.followerPoints)
-                                             : parseInt(user.followerPoints)}
-                                         </div>
-                                       </div>
-                                     </div>
+                            <div>
+                              <h6 className="text-green-400 font-medium mb-2">
+                                Users ({systemData.users.length})
+                              </h6>
+                              <div className="space-y-2">
+                                {systemData.users.map((user, index) => (
+                                  <div
+                                    key={index}
+                                    className="text-slate-300 text-sm bg-slate-700 rounded p-3"
+                                  >
+                                    <div className="flex justify-between items-start mb-2">
+                                      <div>
+                                        <strong>
+                                          {user.name || "Anonymous"}
+                                        </strong>
+                                        {user.username && (
+                                          <span className="text-slate-400">
+                                            {" "}
+                                            (@{user.username})
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-right">
+                                        <div className="text-green-400 font-medium">
+                                          {typeof user.totalPoints === "bigint"
+                                            ? Number(user.totalPoints)
+                                            : parseInt(user.totalPoints)}{" "}
+                                          pts
+                                        </div>
+                                        <div className="text-xs text-slate-400">
+                                          {typeof user.challengePoints ===
+                                          "bigint"
+                                            ? Number(user.challengePoints)
+                                            : parseInt(
+                                                user.challengePoints,
+                                              )}{" "}
+                                          +{" "}
+                                          {typeof user.followerPoints ===
+                                          "bigint"
+                                            ? Number(user.followerPoints)
+                                            : parseInt(user.followerPoints)}
+                                        </div>
+                                      </div>
+                                    </div>
 
-                                       <div className="text-xs text-slate-400 mb-2">
-                                         Principal:{" "}
-                                         <span className="font-mono break-all">
-                                           {user.principal.toString()}
-                                         </span>
-                                         <br />
-                                        Provider: {Object.keys(user.provider)[0]} | Cache:{" "}
-                                        {user.cacheValid ? "Valid" : "Invalid"}
-                                       {user.followersCount && (
-                                         <span>
-                                           {" "}
-                                           | Followers:{" "}
-                                           {typeof user.followersCount ===
-                                           "bigint"
-                                             ? Number(user.followersCount)
-                                             : parseInt(user.followersCount)}
-                                         </span>
-                                       )}
-                                     </div>
+                                    <div className="text-xs text-slate-400 mb-2">
+                                      Principal:{" "}
+                                      <span className="font-mono break-all">
+                                        {user.principal.toString()}
+                                      </span>
+                                      <br />
+                                      Provider: {
+                                        Object.keys(user.provider)[0]
+                                      }{" "}
+                                      | Cache:{" "}
+                                      {user.cacheValid ? "Valid" : "Invalid"}
+                                      {user.followersCount && (
+                                        <span>
+                                          {" "}
+                                          | Followers:{" "}
+                                          {typeof user.followersCount ===
+                                          "bigint"
+                                            ? Number(user.followersCount)
+                                            : parseInt(user.followersCount)}
+                                        </span>
+                                      )}
+                                    </div>
 
-                                     {user.completedChallenges.length > 0 && (
-                                       <div className="mt-2">
-                                         <div className="text-xs text-slate-400 mb-1">
-                                           Completed Challenges:
-                                         </div>
-                                         <div className="flex flex-wrap gap-1">
-                                           {user.completedChallenges.map(
-                                             (challenge, idx) => (
-                                               <span
-                                                 key={idx}
-                                                 className={`text-xs px-2 py-1 rounded ${
-                                                   challenge.status.verified
-                                                     ? "bg-green-600 text-white"
-                                                     : challenge.status.pending
-                                                       ? "bg-yellow-600 text-white"
-                                                       : "bg-red-600 text-white"
-                                                 }`}
-                                               >
-                                                 #
-                                                 {typeof challenge.challengeId ===
-                                                 "bigint"
-                                                   ? Number(
-                                                       challenge.challengeId,
-                                                     )
-                                                   : parseInt(
-                                                       challenge.challengeId,
-                                                     )}{" "}
-                                                 (
-                                                 {typeof challenge.points ===
-                                                 "bigint"
-                                                   ? Number(challenge.points)
-                                                   : parseInt(challenge.points)}
-                                                 pts)
-                                               </span>
-                                             ),
-                                           )}
-                                         </div>
-                                       </div>
-                                     )}
-                                   </div>
-                                 ))}
-                               </div>
-                             </div>
-                           </div>
-                         </div>
-                       )}
+                                    {user.completedChallenges.length > 0 && (
+                                      <div className="mt-2">
+                                        <div className="text-xs text-slate-400 mb-1">
+                                          Completed Challenges:
+                                        </div>
+                                        <div className="flex flex-wrap gap-1">
+                                          {user.completedChallenges.map(
+                                            (challenge, idx) => (
+                                              <span
+                                                key={idx}
+                                                className={`text-xs px-2 py-1 rounded ${
+                                                  challenge.status.verified
+                                                    ? "bg-green-600 text-white"
+                                                    : challenge.status.pending
+                                                      ? "bg-yellow-600 text-white"
+                                                      : "bg-red-600 text-white"
+                                                }`}
+                                              >
+                                                #
+                                                {typeof challenge.challengeId ===
+                                                "bigint"
+                                                  ? Number(
+                                                      challenge.challengeId,
+                                                    )
+                                                  : parseInt(
+                                                      challenge.challengeId,
+                                                    )}{" "}
+                                                (
+                                                {typeof challenge.points ===
+                                                "bigint"
+                                                  ? Number(challenge.points)
+                                                  : parseInt(challenge.points)}
+                                                pts)
+                                              </span>
+                                            ),
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
-                       {/* User Management Section */}
-                       <div className="border-t border-slate-600 pt-4 mt-4">
-                         <h6 className="text-white font-medium mb-3 flex items-center">
-                           <svg
-                             className="w-4 h-4 mr-2 text-red-500"
-                             fill="none"
-                             stroke="currentColor"
-                             viewBox="0 0 24 24"
-                           >
-                             <path
-                               strokeLinecap="round"
-                               strokeLinejoin="round"
-                               strokeWidth={2}
-                               d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                             />
-                           </svg>
-                           User Management
-                         </h6>
-                         <div className="space-y-4">
-                           <div>
-                             <label className="label text-sm">User Principal</label>
+                      {/* User Management Section */}
+                      <div className="border-t border-slate-600 pt-4 mt-4">
+                        <h6 className="text-white font-medium mb-3 flex items-center">
+                          <svg
+                            className="w-4 h-4 mr-2 text-red-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                            />
+                          </svg>
+                          User Management
+                        </h6>
+                        <div className="space-y-4">
+                          <div>
+                            <label className="label text-sm">
+                              User Principal
+                            </label>
                              <input
                                type="text"
                                value={userPrincipal}
                                onChange={(e) => setUserPrincipal(e.target.value)}
                                className="input-field w-full"
-                               placeholder="Enter user principal (e.g., abcde-fghij...)"
+                               placeholder="Enter full user principal (63 characters, base32)"
                              />
                              <p className="text-slate-400 text-xs mt-1">
-                               Enter the full principal string of the user you want to manage
+                               Enter the full 63-character principal string of the user you want to delete
                              </p>
-                           </div>
+                          </div>
 
-                            <div className="flex justify-center">
-                              <button
-                                onClick={handleDeleteUser}
-                                disabled={deletingUser || !userPrincipal.trim()}
-                                className="btn-danger text-sm"
-                              >
-                                {deletingUser ? (
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                ) : (
-                                  <>
-                                    <svg
-                                      className="w-4 h-4 mr-2 inline"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                      />
-                                    </svg>
-                                    Delete User
-                                  </>
-                                )}
-                              </button>
-                            </div>
+                          <div className="flex justify-center">
+                            <button
+                              onClick={handleDeleteUser}
+                              disabled={deletingUser || !userPrincipal.trim()}
+                              className="btn-danger text-sm"
+                            >
+                              {deletingUser ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              ) : (
+                                <>
+                                  <svg
+                                    className="w-4 h-4 mr-2 inline"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                    />
+                                  </svg>
+                                  Delete User
+                                </>
+                              )}
+                            </button>
+                          </div>
 
-                            {deleteResult && (
-                             <div className={`rounded-lg p-3 ${
-                               deleteResult.success
-                                 ? "bg-green-900/20 border border-green-600"
-                                 : "bg-red-900/20 border border-red-600"
-                             }`}>
-                               <div className="flex items-center space-x-2">
-                                 <svg
-                                   className={`w-4 h-4 ${
-                                     deleteResult.success ? "text-green-500" : "text-red-500"
-                                   }`}
-                                   fill="none"
-                                   stroke="currentColor"
-                                   viewBox="0 0 24 24"
-                                 >
-                                   {deleteResult.success ? (
-                                     <path
-                                       strokeLinecap="round"
-                                       strokeLinejoin="round"
-                                       strokeWidth={2}
-                                       d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                     />
-                                   ) : (
-                                     <path
-                                       strokeLinecap="round"
-                                       strokeLinejoin="round"
-                                       strokeWidth={2}
-                                       d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                     />
-                                   )}
-                                 </svg>
-                                 <div className={`text-sm ${
-                                   deleteResult.success ? "text-green-400" : "text-red-400"
-                                 }`}>
-                                   <strong>Delete User:</strong> {deleteResult.message}
-                                 </div>
-                               </div>
-                             </div>
-                           )}
-
-                            <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4">
-                              <div className="flex items-start space-x-3">
+                          {deleteResult && (
+                            <div
+                              className={`rounded-lg p-3 ${
+                                deleteResult.success
+                                  ? "bg-green-900/20 border border-green-600"
+                                  : "bg-red-900/20 border border-red-600"
+                              }`}
+                            >
+                              <div className="flex items-center space-x-2">
                                 <svg
-                                  className="w-5 h-5 text-yellow-500 mt-0.5"
+                                  className={`w-4 h-4 ${
+                                    deleteResult.success
+                                      ? "text-green-500"
+                                      : "text-red-500"
+                                  }`}
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
                                 >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                                  />
+                                  {deleteResult.success ? (
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  ) : (
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  )}
                                 </svg>
-                                <div>
-                                  <h5 className="text-yellow-400 font-medium">
-                                    Warning: Destructive Action
-                                  </h5>
-                                  <p className="text-yellow-300 text-sm mt-1">
-                                     <strong>Delete User:</strong> Permanently removes ALL data for the specified user including points, challenges, and verification history. This action cannot be undone.
-                                  </p>
+                                <div
+                                  className={`text-sm ${
+                                    deleteResult.success
+                                      ? "text-green-400"
+                                      : "text-red-400"
+                                  }`}
+                                >
+                                  <strong>Delete User:</strong>{" "}
+                                  {deleteResult.message}
                                 </div>
                               </div>
                             </div>
-                         </div>
-                       </div>
+                          )}
+
+                          <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4">
+                            <div className="flex items-start space-x-3">
+                              <svg
+                                className="w-5 h-5 text-yellow-500 mt-0.5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                                />
+                              </svg>
+                              <div>
+                                <h5 className="text-yellow-400 font-medium">
+                                  Warning: Destructive Action
+                                </h5>
+                                <p className="text-yellow-300 text-sm mt-1">
+                                  <strong>Delete User:</strong> Permanently
+                                  removes ALL data for the specified user
+                                  including points, challenges, and verification
+                                  history. This action cannot be undone.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -748,169 +762,167 @@ function Settings() {
         {/* Apify API Configuration - Admin Only */}
         {isAdmin && (
           <div className="bg-slate-700 rounded-lg p-6 border border-slate-600">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-lg font-semibold text-white flex items-center">
-              <svg
-                className="w-5 h-5 mr-2 text-blue-400"
-                fill="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold text-white flex items-center">
+                <svg
+                  className="w-5 h-5 mr-2 text-blue-400"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                </svg>
+                Apify API Configuration
+              </h4>
+              <button
+                onClick={() => setShowTokenForm(!showTokenForm)}
+                className={showTokenForm ? "btn-secondary" : "btn-primary"}
               >
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-              </svg>
-              Apify API Configuration
-            </h4>
-            <button
-              onClick={() => setShowTokenForm(!showTokenForm)}
-              className={showTokenForm ? "btn-secondary" : "btn-primary"}
-            >
-              {showTokenForm ? "Cancel" : "Configure API"}
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-              <span className="ml-3 text-slate-400">
-                Loading token status...
-              </span>
+                {showTokenForm ? "Cancel" : "Configure API"}
+              </button>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  <div
-                    className={`w-3 h-3 rounded-full ${tokenSet ? "bg-green-500" : "bg-red-500"}`}
-                  ></div>
-                  <span className="text-slate-300">
-                    Bearer Token: {tokenSet ? "Set" : "Not Set"}
-                  </span>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                <span className="ml-3 text-slate-400">
+                  Loading token status...
+                </span>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className={`w-3 h-3 rounded-full ${tokenSet ? "bg-green-500" : "bg-red-500"}`}
+                    ></div>
+                    <span className="text-slate-300">
+                      Bearer Token: {tokenSet ? "Set" : "Not Set"}
+                    </span>
+                  </div>
+                  {tokenMasked && (
+                    <div className="text-slate-400 text-sm">
+                      Token ends with:{" "}
+                      <code className="bg-slate-600 px-2 py-1 rounded text-blue-400 font-mono">
+                        {tokenMasked}
+                      </code>
+                    </div>
+                  )}
                 </div>
-                {tokenMasked && (
-                  <div className="text-slate-400 text-sm">
-                    Token ends with:{" "}
-                    <code className="bg-slate-600 px-2 py-1 rounded text-blue-400 font-mono">
-                      {tokenMasked}
-                    </code>
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2">
+                    <div
+                      className={`w-3 h-3 rounded-full ${cookiesSet ? "bg-green-500" : "bg-red-500"}`}
+                    ></div>
+                    <span className="text-slate-300">
+                      Cookies: {cookiesSet ? "Set" : "Not Set"}
+                    </span>
+                  </div>
+                </div>
+
+                {(!tokenSet || !cookiesSet) && (
+                  <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <svg
+                        className="w-5 h-5 text-yellow-500 mt-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                        />
+                      </svg>
+                      <div>
+                        <h5 className="text-yellow-400 font-medium">
+                          Apify API Configuration Required
+                        </h5>
+                        <p className="text-yellow-300 text-sm mt-1">
+                          Set a valid Apify Bearer Token and cookies string to
+                          enable challenge verification. Get your token from the{" "}
+                          <a
+                            href="https://console.apify.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline hover:text-yellow-200"
+                          >
+                            Apify Console
+                          </a>
+                          .
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  <div
-                    className={`w-3 h-3 rounded-full ${cookiesSet ? "bg-green-500" : "bg-red-500"}`}
-                  ></div>
-                  <span className="text-slate-300">
-                    Cookies: {cookiesSet ? "Set" : "Not Set"}
-                  </span>
-                </div>
-              </div>
 
-              {(!tokenSet || !cookiesSet) && (
-                <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4">
-                  <div className="flex items-start space-x-3">
-                    <svg
-                      className="w-5 h-5 text-yellow-500 mt-0.5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                      />
-                    </svg>
-                    <div>
-                      <h5 className="text-yellow-400 font-medium">
-                        Apify API Configuration Required
-                      </h5>
-                      <p className="text-yellow-300 text-sm mt-1">
-                        Set a valid Apify Bearer Token and cookies string to
-                        enable challenge verification. Get your token from the{" "}
-                        <a
-                          href="https://console.apify.com/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline hover:text-yellow-200"
+                {showTokenForm && (
+                  <form
+                    onSubmit={handleSetToken}
+                    className="bg-slate-600 rounded-lg p-4 border border-slate-500"
+                  >
+                    <h5 className="text-white font-medium mb-3">
+                      Set Apify API Configuration
+                    </h5>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="label text-sm">Bearer Token</label>
+                        <input
+                          type="password"
+                          value={newToken}
+                          onChange={(e) => setNewToken(e.target.value)}
+                          className="input-field w-full"
+                          placeholder="Enter your Apify Bearer Token"
+                          required
+                        />
+                        <p className="text-slate-400 text-xs mt-1">
+                          Your token will be stored securely and only the last 5
+                          characters will be displayed for verification.
+                        </p>
+                      </div>
+                      <div>
+                        <label className="label text-sm">Cookies String</label>
+                        <textarea
+                          value={newCookies}
+                          onChange={(e) => setNewCookies(e.target.value)}
+                          className="input-field w-full"
+                          placeholder='Enter your cookies string (e.g., [{"name":"ct0","value":"your-csrf-token-here"}])'
+                          rows={3}
+                          required
+                        />
+                        <p className="text-slate-400 text-xs mt-1">
+                          Your cookies will be stored securely for Twitter API
+                          access.
+                        </p>
+                      </div>
+                      <div className="flex space-x-3">
+                        <button
+                          type="submit"
+                          disabled={saving}
+                          className="btn-primary text-sm"
                         >
-                          Apify Console
-                        </a>
-                        .
-                      </p>
+                          {saving ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          ) : (
+                            "Save Configuration"
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowTokenForm(false)}
+                          className="btn-secondary text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {showTokenForm && (
-                <form
-                  onSubmit={handleSetToken}
-                  className="bg-slate-600 rounded-lg p-4 border border-slate-500"
-                >
-                  <h5 className="text-white font-medium mb-3">
-                    Set Apify API Configuration
-                  </h5>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="label text-sm">Bearer Token</label>
-                      <input
-                        type="password"
-                        value={newToken}
-                        onChange={(e) => setNewToken(e.target.value)}
-                        className="input-field w-full"
-                        placeholder="Enter your Apify Bearer Token"
-                        required
-                      />
-                      <p className="text-slate-400 text-xs mt-1">
-                        Your token will be stored securely and only the last 5
-                        characters will be displayed for verification.
-                      </p>
-                    </div>
-                    <div>
-                      <label className="label text-sm">Cookies String</label>
-                      <textarea
-                        value={newCookies}
-                        onChange={(e) => setNewCookies(e.target.value)}
-                        className="input-field w-full"
-                        placeholder='Enter your cookies string (e.g., [{"name":"ct0","value":"your-csrf-token-here"}])'
-                        rows={3}
-                        required
-                      />
-                      <p className="text-slate-400 text-xs mt-1">
-                        Your cookies will be stored securely for Twitter API
-                        access.
-                      </p>
-                    </div>
-                    <div className="flex space-x-3">
-                      <button
-                        type="submit"
-                        disabled={saving}
-                        className="btn-primary text-sm"
-                      >
-                        {saving ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        ) : (
-                          "Save Configuration"
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowTokenForm(false)}
-                        className="btn-secondary text-sm"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              )}
-            </div>
-          )}
-        </div>
+                  </form>
+                )}
+              </div>
+            )}
+          </div>
         )}
-
-
       </div>
     </div>
   );

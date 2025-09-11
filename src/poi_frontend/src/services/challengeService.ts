@@ -1,5 +1,6 @@
 import { createActor, canisterId } from "../../../declarations/poi_backend";
 import { Identity } from "@dfinity/agent";
+import { Principal } from "@dfinity/principal";
 
 export type ChallengeType = { follows: { user: string } };
 
@@ -8,7 +9,7 @@ export interface Challenge {
   description: string;
   challengeType: ChallengeType;
   points: bigint;
-  markdownMessage?: string | null;
+  markdownMessage: string | null;
   disabled?: boolean;
 }
 
@@ -61,7 +62,7 @@ export class ChallengeService {
     description: string,
     challengeType: ChallengeType,
     points: bigint,
-    markdownMessage?: string | null,
+    markdownMessage: string,
   ): Promise<bigint | null> {
     try {
       const actor = this.getActor();
@@ -83,7 +84,7 @@ export class ChallengeService {
     description: string,
     challengeType: ChallengeType,
     points: bigint,
-    markdownMessage?: string | null,
+    markdownMessage: string,
   ): Promise<boolean> {
     try {
       const actor = this.getActor();
@@ -302,7 +303,14 @@ export class ChallengeService {
       principal: any;
       username: string | null;
       name: string | null;
-      provider: { github: null } | { twitter: null } | { discord: null } | { google: null } | { auth0: null } | { zitadel: null } | { x: null };
+      provider:
+        | { github: null }
+        | { twitter: null }
+        | { discord: null }
+        | { google: null }
+        | { auth0: null }
+        | { zitadel: null }
+        | { x: null };
       followersCount: bigint | null;
       cacheValid: boolean;
       challengePoints: bigint;
@@ -339,13 +347,14 @@ export class ChallengeService {
     }
   }
 
-  async deleteUser(userPrincipal: any): Promise<{
+  async deleteUser(userPrincipal: string): Promise<{
     success: boolean;
     message: string;
   }> {
     try {
       const actor = this.getActor();
-      const result = await actor.deleteUser(userPrincipal);
+      const principal = Principal.fromText(userPrincipal);
+      const result = await actor.deleteUser(principal);
       return result;
     } catch (error) {
       console.error("Failed to delete user:", error);
@@ -367,6 +376,4 @@ export class ChallengeService {
       throw error;
     }
   }
-
-
 }
