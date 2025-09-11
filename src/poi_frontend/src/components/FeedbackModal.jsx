@@ -22,7 +22,7 @@ function FeedbackModal({ isOpen, onClose }) {
           <iframe
             src="https://feedback-g5y.caffeine.xyz?app=poi&embed=iframe"
             width="100%"
-            height="500"
+            height="600"
             style={{ border: 'none' }}
             title="Feedback Form"
             className="rounded-lg"
