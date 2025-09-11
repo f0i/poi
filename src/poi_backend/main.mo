@@ -287,8 +287,8 @@ persistent actor {
           ).0;
            Debug.print("🔍 BACKEND: [FETCH] Stored user data in cache for principal: " # Principal.toText(principal));
 
-           // Check if caller is anonymous before storing points
-           if (Principal.isAnonymous(caller)) {
+           // Check if principal is anonymous before storing points
+           if (Principal.isAnonymous(principal)) {
              Debug.print("🔍 BACKEND: [FETCH] WARNING: Anonymous user attempted to store points - skipping points calculation");
              Debug.print("🔍 BACKEND: [FETCH] ===== fetchUserData() END (SUCCESS - ANONYMOUS USER) =====");
              return ?user;
