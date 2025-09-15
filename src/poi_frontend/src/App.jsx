@@ -72,7 +72,7 @@ function AuthApp() {
               <span className="text-sm opacity-75">powered by Identify</span>
             </button>
             <p className="text-xs text-slate-500 mt-4">
-              Your data is secure and only used for POI functionality
+              Only user information that is publicly accessible on X will be accessed and shown on the leaderboard.
             </p>
           </div>
         </div>
