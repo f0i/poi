@@ -1,6 +1,7 @@
 {
   "canisters": {
     "poi_backend": {
+      "dependencies": ["user_data_backend"],
       "main": "src/poi_backend/main.mo",
       "type": "motoko",
       "http": {
@@ -8,12 +9,8 @@
       }
     },
     "poi_frontend": {
-      "dependencies": [
-        "poi_backend"
-      ],
-      "source": [
-        "src/poi_frontend/dist"
-      ],
+      "dependencies": ["poi_backend"],
+      "source": ["src/poi_frontend/dist"],
       "type": "assets",
       "workspace": "poi_frontend"
     },
@@ -37,3 +34,4 @@
   "output_env_file": ".env",
   "version": 1
 }
+

@@ -543,14 +543,20 @@ function ChallengeList() {
                                 />
                               </svg>
                             </div>
-                            <div>
-                              <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">
-                                Follow User
-                              </p>
-                              <p className="text-white font-medium">
-                                @{challenge.challengeType.follows.user}
-                              </p>
-                            </div>
+                             <div>
+                               <p className="text-slate-400 text-xs font-medium uppercase tracking-wide">
+                                 Follow User
+                               </p>
+                               <a
+                                 href={`https://x.com/${challenge.challengeType.follows.user}`}
+                                 target="_blank"
+                                 rel="noopener noreferrer"
+                                 className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                                 title={`Visit @${challenge.challengeType.follows.user} on X/Twitter`}
+                               >
+                                 @{challenge.challengeType.follows.user}
+                               </a>
+                             </div>
                           </div>
 
                           <div className="flex items-center space-x-3">
@@ -671,162 +677,164 @@ function ChallengeList() {
                         </div>
                       )}
 
-                      {/* Admin Actions */}
-                      {isAdmin && (
-                        <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-600">
-                          {/* Show verify button only if challenge is enabled and not already verified */}
-                          {!challenge.disabled &&
-                            !(
-                              challengeStatuses[challenge.id] &&
-                              challengeStatuses[challenge.id].verified !==
-                                undefined
-                            ) && (
-                              <button
-                                onClick={() =>
-                                  handleVerifyChallenge(challenge.id)
-                                }
-                                disabled={
-                                  verifyingChallenge === challenge.id ||
-                                  rateLimitedChallenges[challenge.id] ||
-                                  (verificationResults[challenge.id] &&
-                                    verificationResults[challenge.id].error &&
-                                    verificationResults[
-                                      challenge.id
-                                    ].error.includes("permanently blocked"))
-                                }
-                                className={`text-sm px-4 py-2 flex items-center justify-center ${
-                                  verificationResults[challenge.id] &&
-                                  verificationResults[challenge.id].error &&
-                                  verificationResults[
-                                    challenge.id
-                                  ].error.includes("permanently blocked")
-                                    ? "btn-danger opacity-50 cursor-not-allowed"
-                                    : rateLimitedChallenges[challenge.id]
-                                      ? "btn-secondary opacity-50 cursor-not-allowed"
-                                      : "btn-primary"
-                                }`}
-                                title={
-                                  verificationResults[challenge.id] &&
-                                  verificationResults[challenge.id].error &&
-                                  verificationResults[
-                                    challenge.id
-                                  ].error.includes("permanently blocked")
-                                    ? "Account permanently blocked"
-                                    : rateLimitedChallenges[challenge.id]
-                                      ? "Rate limited - please wait"
-                                      : "Verify challenge"
-                                }
-                              >
-                                {verifyingChallenge === challenge.id ? (
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                ) : (
-                                  <>
-                                    <svg
-                                      className="w-4 h-4 mr-2"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                      />
-                                    </svg>
-                                    Verify Challenge
-                                  </>
-                                )}
-                              </button>
-                            )}
+                       {/* Verify Button - Available to all users */}
+                       {!challenge.disabled &&
+                         !(
+                           challengeStatuses[challenge.id] &&
+                           challengeStatuses[challenge.id].verified !==
+                             undefined
+                         ) && (
+                         <div className="mt-4 pt-4 border-t border-slate-600">
+                           <button
+                             onClick={() =>
+                               handleVerifyChallenge(challenge.id)
+                             }
+                             disabled={
+                               verifyingChallenge === challenge.id ||
+                               rateLimitedChallenges[challenge.id] ||
+                               (verificationResults[challenge.id] &&
+                                 verificationResults[challenge.id].error &&
+                                 verificationResults[
+                                   challenge.id
+                                 ].error.includes("permanently blocked"))
+                             }
+                             className={`text-sm px-4 py-2 flex items-center justify-center ${
+                               verificationResults[challenge.id] &&
+                               verificationResults[challenge.id].error &&
+                               verificationResults[
+                                 challenge.id
+                               ].error.includes("permanently blocked")
+                                 ? "btn-danger opacity-50 cursor-not-allowed"
+                                 : rateLimitedChallenges[challenge.id]
+                                   ? "btn-secondary opacity-50 cursor-not-allowed"
+                                   : "btn-primary"
+                             }`}
+                             title={
+                               verificationResults[challenge.id] &&
+                               verificationResults[challenge.id].error &&
+                               verificationResults[
+                                 challenge.id
+                               ].error.includes("permanently blocked")
+                                 ? "Account permanently blocked"
+                                 : rateLimitedChallenges[challenge.id]
+                                   ? "Rate limited - please wait"
+                                   : "Verify challenge"
+                             }
+                           >
+                             {verifyingChallenge === challenge.id ? (
+                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                             ) : (
+                               <>
+                                 <svg
+                                   className="w-4 h-4 mr-2"
+                                   fill="none"
+                                   stroke="currentColor"
+                                   viewBox="0 0 24 24"
+                                 >
+                                   <path
+                                     strokeLinecap="round"
+                                     strokeLinejoin="round"
+                                     strokeWidth={2}
+                                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                   />
+                                 </svg>
+                                 Verify Challenge
+                               </>
+                             )}
+                           </button>
+                         </div>
+                       )}
 
-                          {/* Edit Button */}
-                          <button
-                            onClick={() => handleEditChallenge(challenge)}
-                            className="btn-secondary text-sm px-4 py-2 flex items-center justify-center"
-                            title="Edit challenge"
-                          >
-                            <svg
-                              className="w-4 h-4 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
-                            Edit Challenge
-                          </button>
+                       {/* Admin Actions */}
+                       {isAdmin && (
+                         <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-slate-600">
+                           {/* Edit Button */}
+                           <button
+                             onClick={() => handleEditChallenge(challenge)}
+                             className="btn-secondary text-sm px-4 py-2 flex items-center justify-center"
+                             title="Edit challenge"
+                           >
+                             <svg
+                               className="w-4 h-4 mr-2"
+                               fill="none"
+                               stroke="currentColor"
+                               viewBox="0 0 24 24"
+                             >
+                               <path
+                                 strokeLinecap="round"
+                                 strokeLinejoin="round"
+                                 strokeWidth={2}
+                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                               />
+                             </svg>
+                             Edit Challenge
+                           </button>
 
-                          {/* Disable/Enable Button */}
-                          <button
-                            onClick={() =>
-                              challenge.disabled
-                                ? handleEnableChallenge(challenge.id)
-                                : handleDisableChallenge(challenge.id)
-                            }
-                            className={`text-sm px-4 py-2 flex items-center justify-center ${
-                              challenge.disabled
-                                ? "btn-primary"
-                                : "btn-secondary"
-                            }`}
-                            title={
-                              challenge.disabled
-                                ? "Enable challenge"
-                                : "Disable challenge"
-                            }
-                          >
-                            <svg
-                              className="w-4 h-4 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              {challenge.disabled ? (
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l.707.707A1 1 0 0012.414 11H13m-3 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                              ) : (
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                                />
-                              )}
-                            </svg>
-                            {challenge.disabled ? "Enable" : "Disable"}
-                          </button>
+                           {/* Disable/Enable Button */}
+                           <button
+                             onClick={() =>
+                               challenge.disabled
+                                 ? handleEnableChallenge(challenge.id)
+                                 : handleDisableChallenge(challenge.id)
+                             }
+                             className={`text-sm px-4 py-2 flex items-center justify-center ${
+                               challenge.disabled
+                                 ? "btn-primary"
+                                 : "btn-secondary"
+                             }`}
+                             title={
+                               challenge.disabled
+                                 ? "Enable challenge"
+                                 : "Disable challenge"
+                             }
+                           >
+                             <svg
+                               className="w-4 h-4 mr-2"
+                               fill="none"
+                               stroke="currentColor"
+                               viewBox="0 0 24 24"
+                             >
+                               {challenge.disabled ? (
+                                 <path
+                                   strokeLinecap="round"
+                                   strokeLinejoin="round"
+                                   strokeWidth={2}
+                                   d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.586a1 1 0 01.707.293l.707.707A1 1 0 0012.414 11H13m-3 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                 />
+                               ) : (
+                                 <path
+                                   strokeLinecap="round"
+                                   strokeLinejoin="round"
+                                   strokeWidth={2}
+                                   d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                                 />
+                               )}
+                             </svg>
+                             {challenge.disabled ? "Enable" : "Disable"}
+                           </button>
 
-                          <button
-                            onClick={() => handleDeleteChallenge(challenge.id)}
-                            className="btn-danger text-sm px-4 py-2 flex items-center justify-center"
-                            title="Delete challenge"
-                          >
-                            <svg
-                              className="w-4 h-4 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                            Delete Challenge
-                          </button>
-                        </div>
-                      )}
+                           <button
+                             onClick={() => handleDeleteChallenge(challenge.id)}
+                             className="btn-danger text-sm px-4 py-2 flex items-center justify-center"
+                             title="Delete challenge"
+                           >
+                             <svg
+                               className="w-4 h-4 mr-2"
+                               fill="none"
+                               stroke="currentColor"
+                               viewBox="0 0 24 24"
+                             >
+                               <path
+                                 strokeLinecap="round"
+                                 strokeLinejoin="round"
+                                 strokeWidth={2}
+                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                               />
+                             </svg>
+                             Delete Challenge
+                           </button>
+                         </div>
+                       )}
 
                       {/* Verification Result */}
                       {verificationResults[challenge.id] && (

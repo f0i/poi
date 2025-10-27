@@ -28,6 +28,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const userDataService = new UserDataService(userIdentity);
       const user = await userDataService.getUser(window.location.origin);
+      console.log("getUser for", window.location.origin, "returned", user);
       setUserData(user);
     } catch (error) {
       console.error("Failed to fetch user data:", error);

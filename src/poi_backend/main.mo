@@ -10,33 +10,14 @@ import Hash "mo:base/Hash";
 import Blob "mo:base/Blob";
 import IC "ic:aaaaa-aa";
 import Json "mo:json";
+import UserDataBackend "canister:user_data_backend";
 //import {migration} "ChallengeMigration";
+//import { migration } "UserMigration";
 
 //(with migration)
 persistent actor {
   // External canister types
-  type Provider = { #github; #twitter; #discord; #google; #auth0; #zitadel; #x };
-  type User = {
-    id : Text;
-    bio : ?Text;
-    verified : ?Bool;
-    username : ?Text;
-    provider : Provider;
-    provider_created_at : ?Text;
-    avatar_url : ?Text;
-    name : ?Text;
-    createdAt : Time.Time;
-    origin : Text;
-    following_count : ?Nat;
-    public_gists : ?Nat;
-    email : ?Text;
-    website : ?Text;
-    tweet_count : ?Nat;
-    public_repos : ?Nat;
-    email_verified : ?Bool;
-    followers_count : ?Nat;
-    location : ?Text;
-  };
+  type User = UserDataBackend.User;
 
   // Cached user data with timestamp
   type CachedUser = {
@@ -201,16 +182,6 @@ persistent actor {
     };
   };
 
-  // Get user data actor reference
-  func getUserDataActor() : async* actor {
-    getUser : (Principal, Text) -> async ?User;
-  } {
-    let canisterId = Principal.fromText(USER_DATA_CANISTER_ID);
-    actor (Principal.toText(canisterId)) : actor {
-      getUser : (Principal, Text) -> async ?User;
-    };
-  };
-
   // Check if cached user data is still valid
   func isCacheValid(cached : CachedUser) : Bool {
     let now = Time.now();
@@ -224,10 +195,8 @@ persistent actor {
     Debug.print("🔍 BACKEND: [FETCH] Fetching user data from external canister for principal: " # Principal.toText(principal) # " with origin: " # origin);
 
     try {
-      Debug.print("🔍 BACKEND: [FETCH] Creating user data actor...");
-      let userDataActor = await* getUserDataActor();
-      Debug.print("🔍 BACKEND: [FETCH] Calling external canister getUser()...");
-      let userOpt = await userDataActor.getUser(principal, origin);
+      Debug.print("🔍 BACKEND: [FETCH] Calling external canister getUser" # debug_show (principal, origin) # "...");
+      let userOpt = await UserDataBackend.getUser(principal, origin);
 
       switch (userOpt) {
         case (?user) {
@@ -247,15 +216,7 @@ persistent actor {
             case (?fc) Nat.toText(fc);
             case (null) "null";
           };
-          let providerText = switch (user.provider) {
-            case (#x) { "x" };
-            case (#github) { "github" };
-            case (#twitter) { "twitter" };
-            case (#discord) { "discord" };
-            case (#google) { "google" };
-            case (#auth0) { "auth0" };
-            case (#zitadel) { "zitadel" };
-          };
+          let providerText = user.provider;
 
           Debug.print("🔍 BACKEND: [FETCH] Username: " # usernameText);
           Debug.print("🔍 BACKEND: [FETCH] Provider: " # providerText);
@@ -374,6 +335,7 @@ persistent actor {
           case (?username) { username };
           case (null) { "null" };
         };
+        Debug.print("🔍 BACKEND: Cached username: " # usernameText);
         let followersText = switch (cached.user.followers_count) {
           case (?count) { Nat.toText(count) };
           case (null) { "null" };
@@ -382,15 +344,7 @@ persistent actor {
           case (?count) { Nat.toText(count) };
           case (null) { "null" };
         };
-        let providerText = switch (cached.user.provider) {
-          case (#x) { "x" };
-          case (#github) { "github" };
-          case (#twitter) { "twitter" };
-          case (#discord) { "discord" };
-          case (#google) { "google" };
-          case (#auth0) { "auth0" };
-          case (#zitadel) { "zitadel" };
-        };
+        let providerText = cached.user.provider;
 
         return ?cached.user;
       };
@@ -732,6 +686,14 @@ persistent actor {
     };
   };
 
+  public shared ({ caller }) func resetAdmin() : async () {
+    if (Principal.isController(caller)) {
+      admin := null;
+    } else {
+      Debug.print("Permission denied for principal: " # Principal.toText(caller));
+    };
+  };
+
   // Get current admin
   public query func getAdmin() : async ?Principal {
     return admin;
@@ -929,7 +891,7 @@ persistent actor {
       principal : Principal;
       username : ?Text;
       name : ?Text;
-      provider : Provider;
+      provider : Text;
       followersCount : ?Nat;
       cacheValid : Bool;
       challengePoints : Nat;
@@ -951,11 +913,11 @@ persistent actor {
     let allChallenges = challenges;
 
     // Get all users and their data
-    var usersData : [{
+    type UserData = {
       principal : Principal;
       username : ?Text;
       name : ?Text;
-      provider : Provider;
+      provider : Text;
       followersCount : ?Nat;
       cacheValid : Bool;
       challengePoints : Nat;
@@ -966,7 +928,8 @@ persistent actor {
         status : ChallengeStatus;
         points : Nat;
       }];
-    }] = [];
+    };
+    var usersData : [UserData] = [];
 
     // Iterate through all users with stored points
     for ((principal, _) in Trie.iter(userPoints)) {
@@ -985,7 +948,7 @@ persistent actor {
           {
             username = null;
             name = null;
-            provider = #github; // default
+            provider = "N/A"; // default
             followersCount = null;
             cacheValid = false;
           };
@@ -1031,7 +994,20 @@ persistent actor {
         case (null) { /* No completed challenges */ };
       };
 
-      usersData := Array.append(usersData, [{ principal = principal; username = userInfo.username; name = userInfo.name; provider = userInfo.provider; followersCount = userInfo.followersCount; cacheValid = userInfo.cacheValid; challengePoints = calculatedPoints.challengePoints; followerPoints = calculatedPoints.followerPoints; totalPoints = calculatedPoints.totalPoints; completedChallenges = completedChallenges }]);
+      let newUserData : [UserData] = [{
+        principal = principal;
+        username = userInfo.username;
+        name = userInfo.name;
+        provider : Text = userInfo.provider;
+        followersCount = userInfo.followersCount;
+        cacheValid = userInfo.cacheValid;
+        challengePoints = calculatedPoints.challengePoints;
+        followerPoints = calculatedPoints.followerPoints;
+        totalPoints = calculatedPoints.totalPoints;
+        completedChallenges = completedChallenges;
+      }];
+
+      usersData := Array.append<UserData>(usersData, newUserData);
     };
 
     return {
@@ -1248,15 +1224,7 @@ persistent actor {
           case (?username) { username };
           case (null) { "null" };
         };
-        let providerText = switch (cachedUser.user.provider) {
-          case (#x) { "x" };
-          case (#github) { "github" };
-          case (#twitter) { "twitter" };
-          case (#discord) { "discord" };
-          case (#google) { "google" };
-          case (#auth0) { "auth0" };
-          case (#zitadel) { "zitadel" };
-        };
+        let providerText = cachedUser.user.provider;
         Debug.print("🔍 BACKEND: [FOLLOWER] Username: " # usernameText);
         Debug.print("🔍 BACKEND: [FOLLOWER] Provider: " # providerText);
 
@@ -1631,7 +1599,7 @@ persistent actor {
 
     // Check if user has Twitter data
     switch (cachedUser.user.provider) {
-      case (#x) { /* continue */ };
+      case ("x") { /* continue */ };
       case (_) {
         // Update attempt counters and remove ongoing verification
         updateVerificationAttempts(caller, challengeId, false);

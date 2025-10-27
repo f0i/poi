@@ -159,7 +159,9 @@ function Leaderboard({ onNavigate }) {
         <h2 className="text-3xl font-bold text-white mb-4">
           Proof of Influence
           <br />
-          <span className="text-2xl font-semibold text-blue-400">Leaderboard</span>
+          <span className="text-2xl font-semibold text-blue-400">
+            Leaderboard
+          </span>
         </h2>
         <p className="text-slate-400 text-lg max-w-2xl mx-auto">
           Compete with the community by completing challenges and growing your
@@ -269,12 +271,12 @@ function Leaderboard({ onNavigate }) {
                             ? "bg-slate-800/30 border-slate-700/50 border-dashed opacity-60"
                             : isCurrentUser
                               ? "bg-blue-900/20 border-blue-500/50 ring-1 ring-blue-500/20 hover:scale-[1.02]"
-                              : `${getRankStyle(rank)} ${index >= 3 && isAuthenticated ? "blur-sm opacity-60" : "shadow-lg ring-1 ring-white/10 hover:scale-[1.02]"}`
+                              : `${getRankStyle(rank)} ${"shadow-lg ring-1 ring-white/10 hover:scale-[1.02]"}`
                         }`}
                         style={{
                           filter: user.isPlaceholder
                             ? "none"
-                            : index >= 3 && isAuthenticated
+                            : index >= 3 && !isAuthenticated
                               ? `blur(${Math.min((index - 2) * 0.5, 2)}px)`
                               : "none",
                         }}

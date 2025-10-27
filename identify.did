@@ -22,7 +22,7 @@ type User =
    location: opt text;
    name: opt text;
    origin: text;
-   provider: Provider;
+   provider: ProviderKey;
    provider_created_at: opt text;
    public_gists: opt nat;
    public_repos: opt nat;
@@ -43,63 +43,98 @@ type TransformArgs =
    response: http_request_result;
  };
 type Time = int;
-type Result_1 = 
- variant {
-   err: text;
-   ok;
- };
-type Result = 
+type Result__1 = 
  variant {
    err: text;
    ok: record {auth: AuthResponse;};
  };
-type Provider = 
+type Result = 
  variant {
-   auth0;
-   github;
-   google;
-   x;
-   zitadel;
+   err: text;
+   ok;
  };
+type ProviderKey = text;
 type PrepRes = 
  variant {
    err: text;
    ok: record {
          expireAt: Time;
+         isNew: bool;
          pubKey: vec nat8;
        };
  };
 type Main = 
  service {
-   addMod: (user: principal) -> (Result_1);
-   checkEmail: ("principal": principal, email: text) -> (bool) query;
+   /// Add a provider to the list of configured providers.
+   /// If a authority is provided, the configuration will be loaded from the configuration in GET <authority>.well-known/openid-configuration.
+   /// Parameters:
+   /// - config: The Identify state.
+   /// - provider: The provider configuration to add. If the auth field contains a authority, the configuration will be fetched from there.
+   /// - caller: The principal of the caller. Must be the owner.
+   addProvider: (name: text, params: AuthParams) -> (Result);
    /// Get cycle balance of the backend canister
    getBalance: () -> (record {
                         "text": text;
                         val: nat;
                       }) query;
-   getDelegation: (provider: Provider, origin: text, sessionKey: vec nat8,
-    expireAt: Time, targets: opt vec principal) -> (Result) query;
+   /// Get the previously prepared delegation
+   getDelegation: (provider: ProviderKey, origin: text, sessionKey: vec nat8,
+    expireAt: Time, targets: opt vec principal) -> (Result__1) query;
    /// Get an email address for a principal
    /// This function can only be called from whitelisted principals, usually the backend canister of an app
    getEmail: ("principal": principal, origin: text) -> (opt text) query;
    /// Get principal and some user info of the caller
    getPrincipal: () -> (principal) query;
-   getStats: () -> (vec text) query;
+   /// Get the list of provider configurations for the frontend
+   getProviders: () -> (vec FrontendOAuth2Config) query;
+   /// Get information about the app
+   getStats: () ->
+    (record {
+       appCount: nat;
+       keyCount: nat;
+       loginCount: nat;
+     }) query;
    /// Get an email address for a principal
    /// This function can only be called from whitelisted principals, usually the backend canister of an app
    getUser: ("principal": principal, origin: text) -> (opt User) query;
-   info: () -> (text) query;
-   /// Verify the token and prepare a delegation.
+   /// Connect code and session key
+   /// The codeHash is a sha256 hash of the authorization code returned from the provider
+   /// By committing to the code in advance, it prevents potential attackers (boundary nodes or node machines) from intercepting the code and creating a delegation for a different sessionKey.
+   lockPKCEJWTcode: (provider: ProviderKey, codeHash: vec nat8, sessionKey:
+    vec nat8) -> (Result);
+   /// Verify the JWT token and prepare a delegation.
    /// The delegation can be fetched using an query call to getDelegation.
-   prepareDelegation: (provider: Provider, token: text, origin: text,
+   prepareDelegation: (provider: ProviderKey, token: text, origin: text,
     sessionKey: vec nat8, expireIn: nat, targets: opt vec principal) ->
     (PrepRes);
-   prepareDelegationPKCE: (provider: Provider, code: text, verifier: 
+   /// Check PKCE sign in and prepare delegation
+   /// 
+   /// Warning:
+   /// This function uses non-replicated http-outcalls to complete the authentication flow and request user data.
+   /// It therefore requires some trust in the node provider, not to manipulate the requests.
+   /// If possible use `prepareDelegation` instead.
+   prepareDelegationPKCE: (provider: ProviderKey, code: text, verifier: 
     text, origin: text, sessionKey: vec nat8, expireIn: nat, targets:
     opt vec principal) -> (PrepRes);
+   /// Complete PKCE sign to get a JWT and prepare delegation.
+   /// 
+   /// Warning:
+   /// This function uses non-replicated http-outcalls to complete authentication.
+   /// It therefore requires some trust in the node provider, not to manipulate the requests.
+   /// If possible use `prepareDelegation` instead.
+   prepareDelegationPKCEJWT: (provider: ProviderKey, code: text, origin:
+    text, sessionKey: vec nat8, expireIn: nat, targets: opt vec principal) ->
+    (PrepRes);
+   /// Transform http request without changing anything
    transform: (raw: TransformArgs) -> (TransformResult) query;
+   /// Transform http request by sorting keys by key ID
    transformKeys: (raw: TransformArgs) -> (TransformResult) query;
+ };
+type FrontendOAuth2Config = 
+ record {
+   auth: AuthParams;
+   name: text;
+   provider: ProviderKey;
  };
 type Delegation = 
  record {
@@ -117,5 +152,32 @@ type AuthResponse =
    delegations: vec Delegation;
    kind: text;
    userPublicKey: vec nat8;
+ };
+type AuthParams = 
+ variant {
+   jwt:
+    record {
+      authority: text;
+      authorizationUrl: text;
+      clientId: text;
+      clientSecret: opt text;
+      fedCMConfigUrl: opt text;
+      keysUrl: text;
+      preFetch: bool;
+      redirectUri: text;
+      responseType: text;
+      scope: text;
+      tokenUrl: opt text;
+    };
+   pkce:
+    record {
+      authorizationUrl: text;
+      clientId: text;
+      clientSecret: opt text;
+      redirectUri: text;
+      scope: text;
+      tokenUrl: text;
+      userInfoEndpoint: text;
+    };
  };
 service : () -> Main
